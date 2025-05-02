@@ -7,3 +7,8 @@
 .env.development.local
 .env.test.local
 __pycache__/
+build/
+flutter_start/build/
+flutter_start/build/ios/
+flutter_start/build/ios/Runner.xcworkspace
+flutter_start

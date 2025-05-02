@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/intro_screen.dart';
+import 'package:flutter_start/screens/intro_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,9 +11,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PILLCARE 연습중',
+      title: 'PILLCARE',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.amber,
+        scaffoldBackgroundColor: Colors.white,
       ),
       home: const IntroScreen(),
     );

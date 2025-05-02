@@ -1,0 +1,1 @@
+ C:\\pillcare\\flutter_start\\.dart_tool\\flutter_build\\3b203d398e4c994628c0950431a9fe39\\native_assets.json: 

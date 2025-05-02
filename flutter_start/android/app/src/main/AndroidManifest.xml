@@ -26,6 +26,25 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- 카카오 SDK 초기화 설정 -->
+        <meta-data
+            android:name="com.kakao.sdk.AppKey"
+            android:value="kakaof05090355f9d1379adbc5395f7165d18" />
+
+        <!-- 카카오 로그인 콜백 액티비티 -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Redirect URI: "kakao{YOUR_NATIVE_APP_KEY}://oauth" -->
+                <data android:host="oauth"
+                    android:scheme="kakaof05090355f9d1379adbc5395f7165d18" />
+            </intent-filter>
+        </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

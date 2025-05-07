@@ -1,4 +1,9 @@
 # This is a generated file; do not edit or check into version control.
+camera=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\camera-0.10.6\\
+camera_android=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\camera_android-0.10.10+2\\
+camera_avfoundation=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\camera_avfoundation-0.9.19\\
+camera_web=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\camera_web-0.3.5\\
+flutter_plugin_android_lifecycle=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\flutter_plugin_android_lifecycle-2.0.28\\
 flutter_secure_storage=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\flutter_secure_storage-9.2.4\\
 flutter_secure_storage_linux=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\flutter_secure_storage_linux-1.2.3\\
 flutter_secure_storage_macos=C:\\Users\\user\\AppData\\Local\\Pub\\Cache\\hosted\\pub.dev\\flutter_secure_storage_macos-3.1.3\\

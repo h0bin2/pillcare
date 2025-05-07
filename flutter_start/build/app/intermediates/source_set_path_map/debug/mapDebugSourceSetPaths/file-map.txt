@@ -43,8 +43,10 @@ com.example.flutter_start.app-resValues-41 C:\pillcare\flutter_start\build\app\g
 com.example.flutter_start.app-packageDebugResources-42 C:\pillcare\flutter_start\build\app\intermediates\incremental\debug\packageDebugResources\merged.dir
 com.example.flutter_start.app-packageDebugResources-43 C:\pillcare\flutter_start\build\app\intermediates\incremental\debug\packageDebugResources\stripped.dir
 com.example.flutter_start.app-debug-44 C:\pillcare\flutter_start\build\app\intermediates\merged_res\debug\mergeDebugResources
-com.example.flutter_start.app-debug-45 C:\pillcare\flutter_start\build\flutter_secure_storage\intermediates\packaged_res\debug\packageDebugResources
-com.example.flutter_start.app-debug-46 C:\pillcare\flutter_start\build\kakao_flutter_sdk_common\intermediates\packaged_res\debug\packageDebugResources
-com.example.flutter_start.app-debug-47 C:\pillcare\flutter_start\build\path_provider_android\intermediates\packaged_res\debug\packageDebugResources
-com.example.flutter_start.app-debug-48 C:\pillcare\flutter_start\build\shared_preferences_android\intermediates\packaged_res\debug\packageDebugResources
-com.example.flutter_start.app-debug-49 C:\pillcare\flutter_start\build\url_launcher_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-45 C:\pillcare\flutter_start\build\camera_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-46 C:\pillcare\flutter_start\build\flutter_plugin_android_lifecycle\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-47 C:\pillcare\flutter_start\build\flutter_secure_storage\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-48 C:\pillcare\flutter_start\build\kakao_flutter_sdk_common\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-49 C:\pillcare\flutter_start\build\path_provider_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-50 C:\pillcare\flutter_start\build\shared_preferences_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.flutter_start.app-debug-51 C:\pillcare\flutter_start\build\url_launcher_android\intermediates\packaged_res\debug\packageDebugResources

@@ -35,6 +35,8 @@ INJECTED from C:\pillcare\flutter_start\android\app\src\debug\AndroidManifest.xm
 MERGED from [:kakao_flutter_sdk_common] C:\pillcare\flutter_start\build\kakao_flutter_sdk_common\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-53:12
 MERGED from [:shared_preferences_android] C:\pillcare\flutter_start\build\shared_preferences_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-14:12
+MERGED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-10:12
+MERGED from [:flutter_plugin_android_lifecycle] C:\pillcare\flutter_start\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [:flutter_secure_storage] C:\pillcare\flutter_start\build\flutter_secure_storage\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-10:12
 MERGED from [:path_provider_android] C:\pillcare\flutter_start\build\path_provider_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.preference:preference:1.2.1] C:\Users\user\.gradle\caches\8.10.2\transforms\0098a6e93522fecc805d8900172003dc\transformed\preference-1.2.1\AndroidManifest.xml:17:1-24:12
@@ -132,6 +134,10 @@ MERGED from [:shared_preferences_android] C:\pillcare\flutter_start\build\shared
 MERGED from [:shared_preferences_android] C:\pillcare\flutter_start\build\shared_preferences_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:flutter_plugin_android_lifecycle] C:\pillcare\flutter_start\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:flutter_plugin_android_lifecycle] C:\pillcare\flutter_start\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
 MERGED from [:flutter_secure_storage] C:\pillcare\flutter_start\build\flutter_secure_storage\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:6:5-8:53
 MERGED from [:flutter_secure_storage] C:\pillcare\flutter_start\build\flutter_secure_storage\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:6:5-8:53
 MERGED from [:path_provider_android] C:\pillcare\flutter_start\build\path_provider_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
@@ -346,6 +352,14 @@ ADDED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_
 		ADDED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:11:13-71
 	android:name
 		ADDED from [:url_launcher_android] C:\pillcare\flutter_start\build\url_launcher_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:9:13-74
+uses-permission#android.permission.CAMERA
+ADDED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:7:5-65
+	android:name
+		ADDED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:7:22-62
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:5-71
+	android:name
+		ADDED from [:camera_android] C:\pillcare\flutter_start\build\camera_android\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:22-68
 uses-library#androidx.window.extensions
 ADDED from [androidx.window:window:1.2.0] C:\Users\user\.gradle\caches\8.10.2\transforms\5093ab42d2307deb2d7ac0b7f5718c38\transformed\jetified-window-1.2.0\AndroidManifest.xml:23:9-25:40
 	android:required

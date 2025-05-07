@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'home_screen.dart';
+import 'camera_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -75,6 +76,76 @@ class _MainScreenState extends State<MainScreen> {
       default:
         return '';
     }
+  }
+
+  // 전화 옵션 모달 함수 추가
+  void _showPhoneOptions(BuildContext context, String phoneNumber) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 전화상담요청 버튼
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200],
+                  minimumSize: const Size.fromHeight(48),
+                  alignment: Alignment.centerLeft,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: Icon(Icons.phone, color: Colors.black, size: 32),
+                label: Text(
+                  '전화상담요청',
+                  style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  // TODO: 전화상담요청 로직
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 12),
+              // 전화걸기 버튼
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200],
+                  minimumSize: const Size.fromHeight(48),
+                  alignment: Alignment.centerLeft,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _makePhoneCall(phoneNumber);
+                },
+                child: Row(
+                  children: [
+                    Icon(Icons.phone, color: Colors.black, size: 32),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(phoneNumber, style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('전화걸기', style: TextStyle(color: Colors.black, fontSize: 14)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -323,7 +394,7 @@ class _MainScreenState extends State<MainScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
-                              onTap: () => _makePhoneCall('02-123-4567'),
+                              onTap: () => _showPhoneOptions(context, '02-123-4567'),
                               child: Container(
                                 padding: EdgeInsets.all(10),
                                 decoration: BoxDecoration(
@@ -387,7 +458,7 @@ class _MainScreenState extends State<MainScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
-                              onTap: () => _makePhoneCall('02-123-4567'),
+                              onTap: () => _showPhoneOptions(context, '02-123-4567'),
                               child: Container(
                                 padding: EdgeInsets.all(10),
                                 decoration: BoxDecoration(
@@ -462,8 +533,10 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 onTap: () {
-                  // TODO: 카메라 페이지로 이동
-                  print('카메라 버튼이 눌렸습니다.');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CameraScreen()),
+                  );
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(

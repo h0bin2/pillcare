@@ -44,6 +44,9 @@
         </intent>
     </queries>
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <permission
         android:name="com.example.flutter_start.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />

@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager # lifespan 사용 위해 임포트
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth # 인증 라우터 임포트
+from routers import auth, record, consultation, pill # 인증 라우터 임포트
 from db.database import connect_db, disconnect_db # DB 연결 함수 임포트
 from dotenv import load_dotenv
 
@@ -44,6 +44,9 @@ app.add_middleware(
 # --- 라우터 포함 ---
 # /api/auth 접두사를 가진 auth 라우터 포함
 app.include_router(auth.router)
+app.include_router(record.router)
+app.include_router(consultation.router)
+app.include_router(pill.router)
 
 # --- 기본 루트 엔드포인트 ---
 @app.get("/")

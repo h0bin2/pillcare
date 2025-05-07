@@ -14,14 +14,15 @@ from services.auth_service import (
 # DB CRUD 함수 임포트
 from db.crud import get_or_create_user, get_user_by_kakao_id
 from datetime import timedelta
+from fastapi.responses import JSONResponse
 
 router = APIRouter(
     prefix="/api/auth", # API 경로 접두사 설정
     tags=["Authentication"], # API 문서 태그 설정
 )
 
-@router.post("/kakao", response_model=Token)
-async def kakao_login_for_access_token(token_data: KakaoToken):
+@router.post("/kakao")
+async def kakao_login_for_access_token(token_data: KakaoToken) -> JSONResponse:
     """
     카카오 토큰을 받아 사용자 정보를 확인하고, DB에서 사용자를 조회/생성한 후
     JWT Access Token과 Refresh Token을 발급합니다.
@@ -62,20 +63,17 @@ async def kakao_login_for_access_token(token_data: KakaoToken):
             expires_delta=refresh_token_expires
         )
 
-        return {
+        return JSONResponse(status_code=200, content={
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer"
-        }
+        })
 
     except HTTPException as http_exc:
-        raise http_exc
+        return JSONResponse(status_code=http_exc.status_code, content={"detail": http_exc.detail})
     except Exception as e:
         print(f"[Auth Router] 카카오 로그인 오류: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="로그인 처리 중 서버 오류 발생"
-        )
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "로그인 처리 중 서버 오류 발생"})
 
 @router.post("/refresh", response_model=Token)
 async def refresh_access_token(refresh_request: RefreshTokenRequest):
@@ -84,10 +82,7 @@ async def refresh_access_token(refresh_request: RefreshTokenRequest):
         payload = verify_token(refresh_request.refresh_token, token_type="refresh")
         kakao_id: str = payload.get("sub")
         if kakao_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token payload"
-            )
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid refresh token payload"})
 
         # --- DB에서 사용자 정보 조회 (Access Token 페이로드용) --- 
         db_user = await get_user_by_kakao_id(kakao_id=kakao_id)
@@ -109,22 +104,19 @@ async def refresh_access_token(refresh_request: RefreshTokenRequest):
             expires_delta=new_refresh_token_expires
         )
 
-        return {
+        return JSONResponse(status_code=200, content={
             "access_token": new_access_token,
             "refresh_token": new_refresh_token,
             "token_type": "bearer"
-        }
+        })
 
     except HTTPException as http_exc:
         if http_exc.status_code == 401:
-             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalid or expired. Please log in again.")
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Refresh token invalid or expired. Please log in again."})
         raise http_exc
     except Exception as e:
         print(f"[Auth Router] 토큰 갱신 중 예상치 못한 오류: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token refresh failed"
-        )
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Token refresh failed"})
 
 @router.get("/users/me", response_model=UserInfo)
 async def read_current_user_info(current_user: UserInfo = Depends(get_current_user)):
@@ -133,4 +125,5 @@ async def read_current_user_info(current_user: UserInfo = Depends(get_current_us
     (get_current_user 의존성이 DB 조회를 포함하도록 수정됨)
     """
     # get_current_user 함수가 DB 조회 후 UserInfo 모델을 반환
-    return current_user 
+    return current_user
+

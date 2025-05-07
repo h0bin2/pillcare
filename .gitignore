@@ -11,4 +11,6 @@ build/
 flutter_start/build/
 flutter_start/build/ios/
 flutter_start/build/ios/Runner.xcworkspace
-flutter_start
+computer-vision/
+*.pt
+flutter-back/original_images/

@@ -1,5 +1,6 @@
 # flutter-back/schemas/schemas.py
 from pydantic import BaseModel
+from datetime import datetime
 
 class KakaoToken(BaseModel):
     """카카오 로그인 시 Flutter 앱에서 받는 토큰 모델"""
@@ -29,3 +30,38 @@ class UserInfo(BaseModel):
     kakao_id: str
     nickname: str | None = None
     # 필요에 따라 다른 사용자 정보 필드 추가 가능 
+
+class PillInfo(BaseModel):
+    """약 정보 API 요청에 필요한 모델"""
+    drug_code: str
+    drug_name: str
+    pack_img: str
+    dosage: str
+    effect: str    
+    
+class PillInfoDetail(BaseModel):
+    """약 상세 정보 API 요청에 필요한 모델"""
+    drug_code: str
+    drug_name: str
+    pack_img: str
+    dosage: str
+    effect: str
+    caution: str
+
+
+class ConsultationHistory(BaseModel):
+    """상담 내역 조회 모델"""
+    id: int
+    user_id: int
+    pharmacy_id: int
+    created_at: datetime
+    updated_at: datetime
+    status: str
+    history: str
+    
+class Record(BaseModel):
+    """레코드 조회 모델"""
+    id: int
+    user_id: int
+    created_at: datetime
+    original_image_path: str

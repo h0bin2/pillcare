@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import 'home_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -143,8 +144,8 @@ class _MainScreenState extends State<MainScreen> {
                                       Text(
                                         '최순자',
                                         style: TextStyle(
-                                          fontSize: constraints.maxHeight * 0.2,
-                                          fontWeight: FontWeight.w800,
+                                          fontSize: constraints.maxHeight * 0.3,
+                                          fontWeight: FontWeight.w900,
                                           color: Color(0xFF000080),
                                         ),
                                       ),
@@ -193,8 +194,8 @@ class _MainScreenState extends State<MainScreen> {
                   Text(
                     '추천',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
                       color: Colors.black,
                     ),
                   ),
@@ -203,7 +204,7 @@ class _MainScreenState extends State<MainScreen> {
               SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   color: Color(0xFFFFD954),
                   borderRadius: BorderRadius.circular(12),
@@ -214,35 +215,36 @@ class _MainScreenState extends State<MainScreen> {
                     Column(
                       children: [
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: 65,
+                          height: 65,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             Icons.medication,
                             color: Colors.black54,
-                            size: 30,
+                            size: 40,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 6),
                         Text(
                           '오메가-3',
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
                             color: Colors.black,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(width: 16),
+                    SizedBox(width: 20),
                     Expanded(
                       child: Text(
                         '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black,
                           height: 1.4,
                         ),
@@ -258,8 +260,8 @@ class _MainScreenState extends State<MainScreen> {
                   Text(
                     '최근 상담 내역',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
                       color: Colors.black,
                     ),
                   ),
@@ -268,13 +270,13 @@ class _MainScreenState extends State<MainScreen> {
               SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Colors.grey.shade500),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(color: Colors.grey.shade300),
@@ -291,26 +293,27 @@ class _MainScreenState extends State<MainScreen> {
                                     Text(
                                       '조은약국',
                                       style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    SizedBox(width: 8),
+                                    SizedBox(width: 10),
                                     Text(
                                       '2025.04.07(월)',
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
                                       ),
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 4),
+                                SizedBox(height: 6),
                                 Text(
                                   '혈압약과 같이 먹어도 되는 영양제 상담',
                                   style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black,
                                   ),
                                 ),
                               ],
@@ -321,12 +324,19 @@ class _MainScreenState extends State<MainScreen> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
                               onTap: () => _makePhoneCall('02-123-4567'),
-                              child: Padding(
-                                padding: EdgeInsets.all(8),
+                              child: Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Color(0xFFFFD954),
+                                    width: 2,
+                                  ),
+                                ),
                                 child: Icon(
                                   Icons.phone_outlined,
                                   color: Colors.orange,
-                                  size: 24,
+                                  size: 28,
                                 ),
                               ),
                             ),
@@ -335,7 +345,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(20),
                       child: Row(
                         children: [
                           Expanded(
@@ -347,26 +357,27 @@ class _MainScreenState extends State<MainScreen> {
                                     Text(
                                       '강릉약국',
                                       style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    SizedBox(width: 8),
+                                    SizedBox(width: 10),
                                     Text(
                                       '2025.04.14(월)',
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
                                       ),
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 4),
+                                SizedBox(height: 6),
                                 Text(
                                   '오메가-3 가격 문의',
                                   style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black,
                                   ),
                                 ),
                               ],
@@ -376,13 +387,20 @@ class _MainScreenState extends State<MainScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
-                              onTap: () => _makePhoneCall('02-987-6543'), // 약국 전화번호
-                              child: Padding(
-                                padding: EdgeInsets.all(8),
+                              onTap: () => _makePhoneCall('02-123-4567'),
+                              child: Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Color(0xFFFFD954),
+                                    width: 2,
+                                  ),
+                                ),
                                 child: Icon(
                                   Icons.phone_outlined,
                                   color: Colors.orange,
-                                  size: 24,
+                                  size: 28,
                                 ),
                               ),
                             ),
@@ -398,8 +416,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -408,27 +426,29 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 onTap: () {
-                  // TODO: 기록 페이지로 이동
-                  print('기록 버튼이 눌렸습니다.');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  width: 100,
-                  height: 85,
+                  width: 105,
+                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.calendar_today,
                         color: Colors.black,
-                        size: 32,
+                        size: 42,
                       ),
-                      SizedBox(height: 6),
+                      SizedBox(height: 8),
                       Text(
                         '기록',
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -447,22 +467,22 @@ class _MainScreenState extends State<MainScreen> {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  width: 100,
-                  height: 85,
+                  width: 105,
+                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.camera_alt_outlined,
                         color: Colors.black,
-                        size: 32,
+                        size: 42,
                       ),
-                      SizedBox(height: 6),
+                      SizedBox(height: 8),
                       Text(
                         '카메라',
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -481,22 +501,22 @@ class _MainScreenState extends State<MainScreen> {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  width: 100,
-                  height: 85,
+                  width: 105,
+                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.location_on_outlined,
                         color: Colors.black,
-                        size: 32,
+                        size: 42,
                       ),
-                      SizedBox(height: 6),
+                      SizedBox(height: 8),
                       Text(
                         '약국',
                         style: TextStyle(
                           color: Colors.black,
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -508,6 +528,35 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildButton(IconData icon, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 80, // 버튼 크기 키움
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.yellow[700],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            icon,
+            size: 40, // 아이콘 크기 키움
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 18, // 글씨 크기 키움
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

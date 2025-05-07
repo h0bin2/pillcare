@@ -10,7 +10,7 @@
   },
   "cxxBuildFolder": "C:\\pillcare\\flutter_start\\android\\app\\.cxx\\Debug\\4ua504r3\\x86",
   "soFolder": "C:\\pillcare\\flutter_start\\build\\app\\intermediates\\cxx\\Debug\\4ua504r3\\obj\\x86",
-  "soRepublishFolder": "C:\\pillcare\\flutter_start\\build\\app\\intermediates\\cmake\\profile\\obj\\x86",
+  "soRepublishFolder": "C:\\pillcare\\flutter_start\\build\\app\\intermediates\\cmake\\debug\\obj\\x86",
   "abiPlatformVersion": 21,
   "cmake": {
     "effectiveConfiguration": {
@@ -25,7 +25,7 @@
     ],
     "cFlagsList": [],
     "cppFlagsList": [],
-    "variantName": "profile",
+    "variantName": "debug",
     "isDebuggableEnabled": true,
     "validAbiList": [
       "armeabi-v7a",

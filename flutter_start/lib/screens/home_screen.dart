@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'main_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import '../services/record_service.dart';
+import 'package:intl/intl.dart'; // isSameDay 사용 및 날짜 포맷 위해 필요
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -14,21 +17,262 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.week;
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  DateTime? _selectedDay = DateTime.now();
 
-  // 더미 약 데이터
-  final List<Map<String, dynamic>> dummyMeds = [
-    {
-      'name': '오메가-3',
-      'effects': ['심혈관 건강 개선', '눈 건강 유지'],
-      'image': 'https://via.placeholder.com/60',
-    },
-    {
-      'name': '다이크로질',
-      'effects': ['고혈압 개선', '부종 개선'],
-      'image': 'https://via.placeholder.com/60',
-    },
-  ];
+  bool _isLoading = true;
+  List<Map<String, dynamic>>? _userRecords;
+  String? _fetchError;
+  int _currentPageIndex = 0; // PageView 현재 페이지 인덱스
+
+  // 더미 약 데이터는 이제 사용 안 함
+  // final List<Map<String, dynamic>> dummyMeds = [ ... ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 선택일 설정 (선택 사항, 오늘 날짜 기준으로 데이터를 먼저 보여줄 수 있음)
+    // _selectedDay = _focusedDay;
+    _fetchUserRecords();
+  }
+
+  Future<void> _fetchUserRecords() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _fetchError = null;
+      _currentPageIndex = 0; // 데이터 다시 불러올 때 인덱스 초기화
+    });
+
+    try {
+      final records = await RecordService.getRecords();
+      if (!mounted) return;
+
+      if (records != null) {
+        setState(() {
+          _userRecords = records;
+          if (kDebugMode) {
+            print('[HomeScreen] Successfully fetched ${_userRecords!.length} records.');
+          }
+        });
+      } else {
+        setState(() {
+          _fetchError = '레코드 정보를 가져오는데 실패했습니다.';
+          if (kDebugMode) {
+            print('[HomeScreen] Failed to fetch records (null returned from service).');
+          }
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _fetchError = '오류 발생: ${e.toString()}';
+        if (kDebugMode) {
+          print('[HomeScreen] Error fetching records: $e');
+        }
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // <<< 선택된 날짜에 해당하는 레코드 필터링 함수 >>>
+  List<Map<String, dynamic>> _getFilteredRecordsForSelectedDay() {
+    if (_userRecords == null || _selectedDay == null) {
+      return [];
+    }
+
+    return _userRecords!.where((record) {
+      try {
+        if (record['created_at'] != null && record['created_at'] is String) {
+          final String createdAtString = record['created_at'] as String;
+          // 백엔드가 +09:00 와 같은 오프셋을 포함한 ISO 문자열을 반환한다고 가정
+          // 예: "2023-10-28T14:30:00+09:00"
+          final DateTime recordDateTime = DateTime.parse(createdAtString); // KST를 인지하는 DateTime 객체
+
+          // recordDateTime (KST)을 디바이스의 local timezone으로 변환하여 비교
+          // _selectedDay는 사용자의 local timezone에서의 00:00:00 임
+          return isSameDay(recordDateTime.toLocal(), _selectedDay!);
+        } else {
+          if(kDebugMode) print('[HomeScreen] Invalid or missing created_at for record: ${record['id']}');
+          return false;
+        }
+      } catch (e) {
+        if (kDebugMode) print('[HomeScreen] Error parsing or comparing created_at for record ${record['id']}: $e. Value: ${record['created_at']}');
+        return false;
+      }
+    }).toList();
+  }
+
+  // _getGroupedPillsForSelectedDay() 함수는 각 레코드별로 약물을 보여주므로 더 이상 이 형태로 사용되지 않음
+  // Map<String, Map<String, dynamic>> _getGroupedPillsForSelectedDay() { ... }
+
+  // _HomeScreenState 클래스 내부에 추가
+  bool _dayHasRecords(DateTime day) {
+    if (_userRecords == null) return false;
+    return _userRecords!.any((record) {
+      if (record['created_at'] != null && record['created_at'] is String) {
+        try {
+          final createdAt = DateTime.parse(record['created_at']);
+          return isSameDay(createdAt, day);
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    });
+  }
+
+  // _HomeScreenState 클래스 내부에 추가
+  String _getFormattedTime(String? createdAtIsoString) {
+    if (createdAtIsoString == null || createdAtIsoString.isEmpty) {
+      return '--:--';
+    }
+    try {
+      // createdAtIsoString은 이미 KST이며, 오프셋 정보(+09:00)를 포함하고 있음
+      final DateTime dateTimeKST = DateTime.parse(createdAtIsoString);
+      return DateFormat('HH:mm').format(dateTimeKST); // 'HH:mm' 형식으로 시간만 표시
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HomeScreen] Error formatting time: $e for string $createdAtIsoString');
+      }
+      return '--:--';
+    }
+  }
+
+  // --- 각 기록(record_id)별 페이지를 만드는 헬퍼 함수 ---
+  Widget _buildRecordItemPage(Map<String, dynamic> recordData) {
+    final String? imagePath = recordData['original_image_path'];
+    final List<dynamic> pillDetails = recordData['details'] ?? [];
+
+    String imageUrl = 'assets/images/placeholder.png';
+    bool canLoadImage = false;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      if (imagePath.startsWith('http')) {
+        imageUrl = imagePath;
+      } else if (!imagePath.startsWith('/')) {
+        imageUrl = 'http://192.168.45.15:8000/$imagePath';
+      } else {
+        imageUrl = 'http://192.168.45.15:8000$imagePath';
+      }
+      canLoadImage = true;
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 20, bottom: 20),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            width: double.infinity,
+            height: 180,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF888888)),
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFF5F5F5),
+            ),
+            child: Center(
+              child: canLoadImage
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.fill,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        if (kDebugMode) print('[HomeScreen-_buildRecordItemPage] Image load error: $error for URL: $imageUrl');
+                        return const Center(child: Text('이미지 로딩 실패', style: TextStyle(color: Colors.red)));
+                      },
+                    )
+                  : const Text('이미지 없음', style: TextStyle(color: Colors.grey)),
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (pillDetails.isNotEmpty)
+            ...pillDetails.map((detail) {
+              if (detail is! Map<String, dynamic>) return const SizedBox.shrink();
+              final String pillName = detail['pill_name'] ?? '이름 모름';
+              final int count = detail['pill_count'] ?? 0;
+              final String effect = detail['effect'] ?? '효능 정보 없음';
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.medication, color: Color(0xFFFFB300), size: 40),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$pillName ($count개)',
+                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 20),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('• $effect', style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.alarm, color: Color(0xFFFFB300), size: 32),
+                      onPressed: () {
+                        _showAlarmPicker(context);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList()
+          else
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('이 기록에는 등록된 약 정보가 없습니다.')),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- 페이지 인디케이터 위젯 ---
+  Widget _buildPageIndicator(int itemCount) {
+    if (itemCount <= 1) return const SizedBox.shrink(); // 페이지가 하나 이하면 인디케이터 숨김
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(itemCount, (index) {
+        return Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _currentPageIndex == index
+                ? Theme.of(context).primaryColor // 활성 페이지 색상 (기본 테마색 사용)
+                : Colors.grey.withOpacity(0.5),   // 비활성 페이지 색상
+          ),
+        );
+      }),
+    );
+  }
 
   void _showAlarmPicker(BuildContext context) {
     final List<String> ampm = ['오전', '오후'];
@@ -129,6 +373,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredRecords = _getFilteredRecordsForSelectedDay();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -149,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // 1. 달력 섹션 (커스텀 헤더 포함, 상단 고정)
+          // 1. 달력 섹션 (커스텀 헤더 포함, 상단 고정) - 기존 코드 유지
           Padding(
             padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
             child: Column(
@@ -170,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 _focusedDay.month - 1,
                                 1,
                               );
+                              _currentPageIndex = 0; // 월 변경 시 인덱스 초기화
                             });
                           },
                         ),
@@ -190,6 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 _focusedDay.month + 1,
                                 1,
                               );
+                              _currentPageIndex = 0; // 월 변경 시 인덱스 초기화
                             });
                           },
                         ),
@@ -243,168 +491,106 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 TableCalendar(
-                  headerVisible: false, // 헤더(포맷 버튼 포함) 숨김
-                  daysOfWeekVisible: false, // 기본 요일 라벨 숨김
+                  headerVisible: false, 
+                  daysOfWeekVisible: false, 
                   locale: 'ko_KR',
                   firstDay: DateTime.utc(2020, 1, 1),
                   lastDay: DateTime.utc(2030, 12, 31),
                   focusedDay: _focusedDay,
                   calendarFormat: _calendarFormat,
-                  selectedDayPredicate: (day) {
-                    return isSameDay(_selectedDay, day);
-                  },
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                   onDaySelected: (selectedDay, focusedDay) {
                     setState(() {
                       _selectedDay = selectedDay;
-                      _focusedDay = focusedDay;
+                      _focusedDay = focusedDay; 
+                      _currentPageIndex = 0; 
                     });
                   },
                   onFormatChanged: (format) {
-                    setState(() {
-                      _calendarFormat = format;
-                    });
+                    if (_calendarFormat != format) {
+                      setState(() {
+                        _calendarFormat = format;
+                      });
+                    }
                   },
                   calendarStyle: const CalendarStyle(
                     todayDecoration: BoxDecoration(
-                      color: Color(0xFFFFD954), // 진한 노란색
+                      color: Color(0xFFFFD954), 
                       shape: BoxShape.circle,
                     ),
                   ),
                   calendarBuilders: CalendarBuilders(
                     defaultBuilder: (context, day, focusedDay) {
-                      return Center(
-                        child: Text(
-                          '${day.day}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      );
+                      BoxDecoration? decoration;
+                      TextStyle textStyle = const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black);
+                      bool hasRecords = _dayHasRecords(day);
+                      if (!isSameDay(day, _selectedDay) && !isSameDay(day, DateTime.now()) && hasRecords) {
+                        decoration = BoxDecoration(color: Colors.green.withOpacity(0.3), shape: BoxShape.circle);
+                      }
+                      return Center(child: Container(decoration: decoration, padding: const EdgeInsets.all(6), child: Text('${day.day}', style: textStyle)));
                     },
                     selectedBuilder: (context, day, focusedDay) {
                       return Center(
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFD954),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
                           padding: const EdgeInsets.all(6),
-                          child: Text(
-                            '${day.day}',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
+                          child: Text('${day.day}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
                         ),
                       );
                     },
                     todayBuilder: (context, day, focusedDay) {
-                      return Center(
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFD954),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(6),
-                          child: Text(
-                            '${day.day}',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      );
+                      BoxDecoration decoration = const BoxDecoration(color: Color(0xFFFFD954), shape: BoxShape.circle);
+                      bool hasRecords = _dayHasRecords(day);
+                      if (isSameDay(day, DateTime.now()) && !isSameDay(day, _selectedDay) && hasRecords) {
+                        decoration = BoxDecoration(color: Colors.green.withOpacity(0.5), shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD954), width: 2));
+                      }
+                      return Center(child: Container(decoration: decoration, padding: const EdgeInsets.all(6), child: Text('${day.day}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black))));
                     },
                   ),
                 ),
               ],
             ),
           ),
-          // 2. 이미지 박스 + 약 정보 카드 리스트 (아래만 스크롤)
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(top: 20),
-              children: [
-                // 이미지용 테두리 박스
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                  width: double.infinity,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(0xFF888888)),
-                    borderRadius: BorderRadius.circular(12),
-                    color: Color(0xFFF5F5F5),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '여기에 사용자가 찍은 약 사진이 들어갑니다',
-                      style: TextStyle(color: Colors.grey, fontSize: 18),
-                    ),
-                  ),
-                ),
-                // 약 정보 카드 리스트
-                ...dummyMeds.map((med) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Color(0xFFEEEEEE)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: Color(0xFFF5F5F5),
-                          child: Icon(
-                            Icons.medication,
-                            color: Color(0xFFFFB300),
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              med['name'],
-                              style: const TextStyle(
-                                color: Color(0xFFFFB300),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            ...med['effects'].map<Widget>((e) => Text(
-                              '• $e',
-                              style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold),
-                            )).toList(),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.alarm, color: Color(0xFFFFB300), size: 32),
-                        onPressed: () {
-                          _showAlarmPicker(context);
-                        },
-                      ),
-                    ],
-                  ),
-                )).toList(),
-              ],
+          // 2. 페이지 인디케이터 (달력 아래)
+          if (filteredRecords.isNotEmpty)
+            _buildPageIndicator(filteredRecords.length),
+
+          // 3. 현재 슬라이드의 KST 시간 표시 (인디케이터 아래)
+          if (filteredRecords.isNotEmpty && _currentPageIndex < filteredRecords.length && filteredRecords[_currentPageIndex]['created_at'] != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                '${_getFormattedTime(filteredRecords[_currentPageIndex]['created_at'])}',
+                style: const TextStyle(fontSize: 16.0, color: Colors.black87, fontWeight: FontWeight.bold),
+              ),
             ),
+          // 4. PageView (슬라이드 영역)
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _fetchError != null
+                    ? Center(child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text('오류: $_fetchError', textAlign: TextAlign.center),
+                      ))
+                    : filteredRecords.isEmpty
+                        ? Center(child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text('선택된 날짜에 기록된 정보가 없습니다.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                          ))
+                        : PageView.builder(
+                            itemCount: filteredRecords.length,
+                            controller: PageController(initialPage: _currentPageIndex),
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPageIndex = index;
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              final record = filteredRecords[index];
+                              return _buildRecordItemPage(record);
+                            },
+                          ),
           ),
         ],
       ),

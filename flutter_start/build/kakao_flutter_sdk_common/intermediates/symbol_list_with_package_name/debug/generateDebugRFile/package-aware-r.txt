@@ -1,3 +1,0 @@
-com.kakao.sdk.flutter
-layout activity_talk_auth_code
-style TransparentCompat

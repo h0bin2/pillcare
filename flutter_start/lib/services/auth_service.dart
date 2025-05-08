@@ -3,10 +3,13 @@
 import 'dart:io'; // Platform 확인용
 
 import 'package:dio/dio.dart'; // dio 임포트
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'; // kDebugMode 사용
 import 'package:flutter/services.dart'; // PlatformException 사용 위해 추가
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+
+import '../models/user_info.dart'; // UserInfo 모델
+import '../models/consultation_info.dart'; // ConsultationInfo 모델
 
 // --- Custom Exception ---
 // 앱 전역에서 사용할 수 있도록 별도 파일로 분리하는 것이 더 좋습니다.
@@ -23,7 +26,7 @@ class AuthService {
 
   // --- Constants ---
   // 실제 운영 환경에서는 환경 변수 등으로 관리하는 것이 좋습니다.
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'http://192.168.45.15:8000';
   static final _storage = const FlutterSecureStorage();
   static const String _accessTokenKey = 'jwt_access_token';
   static const String _refreshTokenKey = 'jwt_refresh_token';
@@ -47,25 +50,23 @@ class AuthService {
             final accessToken = await _getAccessToken();
             if (accessToken != null) {
               options.headers['Authorization'] = 'Bearer $accessToken';
-              print('[Dio Interceptor] Access Token 추가됨: ${options.path}');
+              if (kDebugMode) print('[Dio Interceptor] Access Token 추가됨: ${options.path}');
             } else {
-               print('[Dio Interceptor] Access Token 없음: ${options.path}');
-               // 토큰이 꼭 필요한 요청인데 토큰이 없다면 여기서 요청을 중단시킬 수도 있음
-               // return handler.reject(DioException(requestOptions: options, message: 'Access Token not found'));
+              if (kDebugMode) print('[Dio Interceptor] Access Token 없음: ${options.path}');
             }
           }
           return handler.next(options); // 요청 계속 진행
         },
         onError: (DioException error, handler) async {
-          print('[Dio Interceptor] 에러 발생: ${error.requestOptions.path}, ${error.response?.statusCode}');
+          if (kDebugMode) print('[Dio Interceptor] 에러 발생: ${error.requestOptions.path}, ${error.response?.statusCode}');
           // 401 에러이고, 리프레시 요청이 아닐 경우 토큰 갱신 시도
           if (error.response?.statusCode == 401 && error.requestOptions.path != '/api/auth/refresh') {
-            print('[Dio Interceptor] 401 에러 감지, 토큰 갱신 시도...');
+            if (kDebugMode) print('[Dio Interceptor] 401 에러 감지, 토큰 갱신 시도...');
             try {
               final refreshed = await refreshToken(); // 토큰 갱신 시도
 
               if (refreshed) {
-                print('[Dio Interceptor] 토큰 갱신 성공, 원래 요청 재시도...');
+                if (kDebugMode) print('[Dio Interceptor] 토큰 갱신 성공, 원래 요청 재시도...');
                 // 새 토큰으로 헤더 업데이트
                 final newAccessToken = await _getAccessToken();
                 error.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
@@ -75,7 +76,7 @@ class AuthService {
                  return handler.resolve(response); // 성공 응답으로 핸들러 종료
               } else {
                 // 갱신 실패 시 (refreshToken 내부에서 로그아웃 처리됨)
-                print('[Dio Interceptor] 토큰 갱신 실패, 요청 거부.');
+                if (kDebugMode) print('[Dio Interceptor] 토큰 갱신 실패, 요청 거부.');
                 // 로그인 실패로 간주하고 에러 반환 (UI에서 처리하도록)
                  return handler.reject(DioException(
                    requestOptions: error.requestOptions,
@@ -85,7 +86,7 @@ class AuthService {
                  ));
               }
             } catch (e) {
-              print('[Dio Interceptor] 토큰 갱신 중 예외 발생: $e');
+              if (kDebugMode) print('[Dio Interceptor] 토큰 갱신 중 예외 발생: $e');
               await logout(); // 예외 발생 시 안전하게 로그아웃
               return handler.reject(DioException(
                  requestOptions: error.requestOptions,
@@ -100,13 +101,13 @@ class AuthService {
       ),
     );
     _isInterceptorSetup = true;
-    print('[AuthService] Dio 인터셉터 설정 완료.');
+    if (kDebugMode) print('[AuthService] Dio 인터셉터 설정 완료.');
   }
 
   // --- Token Management ---
   static Future<void> _saveAccessToken(String token) async {
     await _storage.write(key: _accessTokenKey, value: token);
-     print('[AuthService] Access Token 저장됨');
+    if (kDebugMode) print('[AuthService] Access Token 저장됨');
   }
 
 
@@ -116,7 +117,7 @@ class AuthService {
 
   static Future<void> _saveRefreshToken(String token) async {
     await _storage.write(key: _refreshTokenKey, value: token);
-     print('[AuthService] Refresh Token 저장됨');
+    if (kDebugMode) print('[AuthService] Refresh Token 저장됨');
   }
 
   static Future<String?> _getRefreshToken() async {
@@ -126,7 +127,7 @@ class AuthService {
   static Future<void> _deleteAllTokens() async {
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
-    print('[AuthService] 모든 JWT 토큰 삭제 완료');
+    if (kDebugMode) print('[AuthService] 모든 JWT 토큰 삭제 완료');
   }
 
   // --- Authentication Status ---
@@ -134,29 +135,29 @@ class AuthService {
     _setupDioInterceptors(); // 최초 호출 시 인터셉터 설정 확인
     final token = await _getAccessToken();
     if (token == null) {
-      print('[AuthService] isLoggedIn: 로컬 Access Token 없음');
+      if (kDebugMode) print('[AuthService] isLoggedIn: 로컬 Access Token 없음');
       return false;
     }
 
-    print('[AuthService] isLoggedIn: 로컬 토큰 존재, 백엔드 유효성 검사...');
+    if (kDebugMode) print('[AuthService] isLoggedIn: 로컬 토큰 존재, 백엔드 유효성 검사...');
     try {
       // 보호된 엔드포인트 호출하여 토큰 유효성 검증
       await _dio.get('/api/auth/users/me');
-      print('[AuthService] isLoggedIn: 토큰 유효함');
+      if (kDebugMode) print('[AuthService] isLoggedIn: 토큰 유효함');
       return true;
     } on DioException catch (e) {
       // 인터셉터가 401 시 갱신 시도 후 실패하면 에러를 반환하므로 여기서 잡힘
-      print('[AuthService] isLoggedIn: 토큰 검증 실패 (${e.response?.statusCode}): ${e.message}');
+      if (kDebugMode) print('[AuthService] isLoggedIn: 토큰 검증 실패 (${e.response?.statusCode}): ${e.message}');
       if (e.response?.statusCode == 401 || e.error is AuthException) {
          // 토큰이 유효하지 않거나 갱신 실패 시 로그아웃 상태로 간주 (logout은 인터셉터/refreshToken에서 처리됨)
-         print('[AuthService] isLoggedIn: 유효하지 않은 토큰 또는 갱신 실패');
+         if (kDebugMode) print('[AuthService] isLoggedIn: 유효하지 않은 토큰 또는 갱신 실패');
       } else {
          // 네트워크 오류 등 다른 문제
-          print('[AuthService] isLoggedIn: 백엔드 통신 오류');
+          if (kDebugMode) print('[AuthService] isLoggedIn: 백엔드 통신 오류');
       }
       return false;
     } catch (e) {
-      print('[AuthService] isLoggedIn: 예상치 못한 오류: $e');
+      if (kDebugMode) print('[AuthService] isLoggedIn: 예상치 못한 오류: $e');
       return false;
     }
   }
@@ -167,11 +168,11 @@ class AuthService {
     try {
       // 카카오 SDK 로그아웃도 시도 (선택적)
       await UserApi.instance.logout();
-      print('[AuthService] 카카오 로그아웃 성공');
+      if (kDebugMode) print('[AuthService] 카카오 로그아웃 성공');
     } catch (error) {
-      print('[AuthService] 카카오 로그아웃 실패 $error');
+      if (kDebugMode) print('[AuthService] 카카오 로그아웃 실패 $error');
     }
-    print('[AuthService] 로그아웃 완료');
+    if (kDebugMode) print('[AuthService] 로그아웃 완료');
   }
 
   // --- Kakao Login ---
@@ -191,12 +192,12 @@ class AuthService {
       } else {
         kakaoToken = await UserApi.instance.loginWithKakaoAccount();
       }
-      print('[AuthService] 카카오 로그인 성공, AccessToken: ${kakaoToken.accessToken.substring(0, 10)}...');
+      if (kDebugMode) {
+        print('[AuthService] 카카오 로그인 성공, AccessToken: ${kakaoToken.accessToken.substring(0, 10)}...');
+        print('[AuthService] 백엔드로 카카오 토큰 전송...');
+      }
 
       // --- 백엔드에 토큰 전송 및 JWT 발급 ---
-      print('[AuthService] 백엔드로 카카오 토큰 전송...');
-      // 로그인/리프레시 요청에는 인터셉터가 적용되지 않는 _dioForRefresh 사용 가능 (단, 에러 처리는 직접 해야 함)
-      // 여기서는 _dio를 사용하되, 인터셉터가 토큰을 추가하지 않도록 경로 확인
       final response = await _dio.post(
         '/api/auth/kakao',
         data: {'kakao_access_token': kakaoToken.accessToken},
@@ -209,7 +210,7 @@ class AuthService {
         if (accessToken != null && refreshToken != null) {
           await _saveAccessToken(accessToken);
           await _saveRefreshToken(refreshToken);
-          print('[AuthService] 백엔드 토큰 저장 성공');
+          if (kDebugMode) print('[AuthService] 백엔드 토큰 저장 성공');
           return true;
         } else {
            throw AuthException('백엔드 응답에 토큰 없음');
@@ -218,7 +219,7 @@ class AuthService {
          throw AuthException('백엔드 카카오 로그인 실패', statusCode: response.statusCode);
       }
     } catch (e) {
-      print('[AuthService] 로그인 과정 중 오류 발생: $e');
+      if (kDebugMode) print('[AuthService] 로그인 과정 중 오류 발생: $e');
       await logout(); // 실패 시 안전하게 로그아웃
       // UI에 에러 전달 위해 AuthException rethrow 가능
       // if (e is DioException) { ... } else if (e is PlatformException) { ... }
@@ -231,11 +232,11 @@ class AuthService {
     _setupDioInterceptors(); // 인터셉터 설정 확인
     final storedRefreshToken = await _getRefreshToken();
     if (storedRefreshToken == null) {
-      print('[AuthService] refreshToken: 저장된 Refresh Token 없음');
+      if (kDebugMode) print('[AuthService] refreshToken: 저장된 Refresh Token 없음');
       return false;
     }
 
-    print('[AuthService] refreshToken: Access Token 갱신 시도...');
+    if (kDebugMode) print('[AuthService] refreshToken: Access Token 갱신 시도...');
     try {
       // 토큰 갱신에는 인터셉터 없는 Dio 인스턴스 사용
       final response = await _dioForRefresh.post(
@@ -250,16 +251,18 @@ class AuthService {
         if (newAccessToken != null && newRefreshToken != null) {
           await _saveAccessToken(newAccessToken);
           await _saveRefreshToken(newRefreshToken);
-          print('[AuthService] refreshToken: 토큰 갱신 및 저장 성공');
+          if (kDebugMode) print('[AuthService] Access Token 갱신 및 저장 성공');
           return true;
         } else {
-          throw AuthException('토큰 갱신 응답에 토큰 없음');
+          if (kDebugMode) print('[AuthService] refreshToken: 응답에 새 토큰 없음');
+          await logout();
+          return false;
         }
       } else {
          throw AuthException('토큰 갱신 실패', statusCode: response.statusCode);
       }
     } catch (e) {
-      print('[AuthService] refreshToken: 오류 발생: $e');
+      if (kDebugMode) print('[AuthService] refreshToken: 오류 발생: $e');
       await logout(); // 갱신 실패 시 강제 로그아웃
       return false;
     }
@@ -268,30 +271,35 @@ class AuthService {
   // --- Get User Info (Protected API Example) ---
   static Future<Map<String, dynamic>?> getCurrentUserInfo() async {
      _setupDioInterceptors(); // 인터셉터 설정 확인
-     print('[AuthService] getCurrentUserInfo: 사용자 정보 요청 시도...');
+     if (kDebugMode) print('[AuthService] getCurrentUserInfo: 사용자 정보 요청 시도...');
     try {
       // 인터셉터가 토큰 추가 및 401 시 갱신/재시도를 처리
       final response = await _dio.get('/api/auth/users/me');
 
-      if (response.statusCode == 200 && response.data is Map) {
-         print('[AuthService] getCurrentUserInfo: 사용자 정보 수신 성공: ${response.data}');
-        return response.data as Map<String, dynamic>;
+      if (response.statusCode == 200 && response.data != null) {
+         if (kDebugMode) print('[AuthService] getCurrentUserInfo: 사용자 정보 수신 성공: ${response.data}');
+        if (response.data is Map<String, dynamic> && response.data.containsKey('id') && response.data['id'] is int) {
+          return response.data as Map<String, dynamic>;
+        } else {
+          if (kDebugMode) print('[AuthService] getCurrentUserInfo: 응답에 사용자 ID(\'id\') 필드가 없거나 정수형이 아닙니다.');
+          throw AuthException('User ID not found or not an integer in user info response.');
+        }
       } else {
          // 인터셉터에서 처리되지 않은 오류 (예: 5xx)
-         print('[AuthService] getCurrentUserInfo: 예상치 못한 응답 (${response.statusCode})');
-         return null;
+         if (kDebugMode) print('[AuthService] getCurrentUserInfo: 예상치 못한 응답 (${response.statusCode})');
+         throw AuthException('Failed to load user info', statusCode: response.statusCode);
       }
     } on DioException catch (e) {
        // 인터셉터에서 최종적으로 처리 못한 에러 (갱신 실패 등)
-       print('[AuthService] getCurrentUserInfo: 요청 실패 (DioException): ${e.message}');
+       if (kDebugMode) print('[AuthService] getCurrentUserInfo: DioException - ${e.message}');
        // AuthException은 인터셉터에서 생성될 수 있음
        if (e.error is AuthException) {
-         print('[AuthService] getCurrentUserInfo: 인증 오류 발생 ${e.error}');
+         if (kDebugMode) print('[AuthService] getCurrentUserInfo: 인증 오류 발생 ${e.error}');
        }
-       return null;
+       throw AuthException('Failed to load user info: ${e.message}', statusCode: e.response?.statusCode);
     } catch (e) {
-       print('[AuthService] getCurrentUserInfo: 예상치 못한 오류: $e');
-       return null;
+       if (kDebugMode) print('[AuthService] getCurrentUserInfo: 예상치 못한 오류: $e');
+       throw AuthException('An unexpected error occurred while fetching user info: $e');
     }
   }
 
@@ -299,10 +307,54 @@ class AuthService {
   // 필요 없다면 이 함수는 제거해도 됩니다.
   static Future<bool> loginWithEmail(String email, String password) async {
     _setupDioInterceptors();
-    print('[AuthService] 이메일 로그인은 현재 구현되지 않았습니다.');
+    if (kDebugMode) print('[AuthService] 이메일 로그인은 현재 구현되지 않았습니다.');
     // TODO: 백엔드에 이메일 로그인 API 구현 후 연동 (/api/auth/login 등)
     // final response = await _dio.post('/api/auth/login', data: {'username': email, 'password': password});
     // 토큰 처리 로직 필요...
     return false;
+  }
+
+  // --- Consultation History ---
+  static Future<List<ConsultationInfo>> getConsultationHistory(int userId) async {
+    _setupDioInterceptors();
+    if (kDebugMode) print('[AuthService] getConsultationHistory: 사용자 ID $userId 로 상담 내역 요청...');
+    try {
+      final response = await _dio.get(
+        '/api/consultation/history', // FastAPI 라우터 prefix + 엔드포인트
+        queryParameters: {'user_id': userId},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is List) {
+          final List<dynamic> responseData = response.data as List<dynamic>;
+          final List<ConsultationInfo> historyList = responseData
+              .map((item) => ConsultationInfo.fromJson(item as Map<String, dynamic>))
+              .toList();
+          if (kDebugMode) print('[AuthService] getConsultationHistory: 상담 내역 ${historyList.length}건 수신 성공');
+          return historyList;
+        } else {
+          if (kDebugMode) print('[AuthService] getConsultationHistory: 응답 데이터가 List 형태가 아님: ${response.data}');
+          throw Exception('Invalid data format from server for consultation history.');
+        }
+      } else {
+        if (kDebugMode) print('[AuthService] getConsultationHistory: 서버 오류 - ${response.statusCode}');
+        throw Exception('Failed to load consultation history. Status code: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) print('[AuthService] getConsultationHistory: DioException - ${e.message}');
+      throw Exception('Failed to load consultation history: ${e.message}');
+    } catch (e) {
+      if (kDebugMode) print('[AuthService] getConsultationHistory: 예상치 못한 오류 - $e');
+      throw Exception('An unexpected error occurred while fetching consultation history: $e');
+    }
+  }
+
+  // RecordService에서 baseUrl을 참조하기 위한 getter (추가)
+  static String getBaseUrl() => _baseUrl;
+
+  // RecordService에서 인터셉터가 적용된 Dio 인스턴스를 참조하기 위한 getter (추가)
+  static Dio getDioInstance() {
+    _setupDioInterceptors(); // 인터셉터 설정 보장
+    return _dio;
   }
 }

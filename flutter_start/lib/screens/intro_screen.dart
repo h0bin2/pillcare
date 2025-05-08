@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'main_screen.dart';
 import '../services/auth_service.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _IntroScreenState extends State<IntroScreen> {
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => isLoggedIn ? const HomeScreen() : const LoginScreen(),
+          builder: (_) => isLoggedIn ? const MainScreen() : const LoginScreen(),
         ),
       );
     }

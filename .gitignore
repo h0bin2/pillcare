@@ -11,6 +11,11 @@ build/
 flutter_start/build/
 flutter_start/build/ios/
 flutter_start/build/ios/Runner.xcworkspace
+flutter_start/.dart_tool/
+flutter_start/*.iml
+flutter_start/.metadata
+flutter_start/.flutter-plugins
+flutter_start/.flutter-plugins-dependencies
 computer-vision/
 *.pt
 flutter-back/original_images/

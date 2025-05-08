@@ -9,8 +9,15 @@ from PIL import Image
 import traceback # 상세 오류 출력을 위해 추가
 import aiofiles # aiofiles 임포트
 import os # os 임포트
-from db.crud import insert_record, insert_record_detail
+from collections import Counter # Counter 추가
+from db.crud import insert_record, insert_record_detail, get_pill_info
 from services.pill_service import get_pill_info_detail, search_pill
+
+def _group_and_count_class_names(class_name_list: list[str]) -> dict[str, int]:
+    """주어진 클래스 이름 리스트에서 각 이름의 개수를 세어 딕셔너리로 반환합니다."""
+    if not class_name_list:
+        return {}
+    return dict(Counter(class_name_list))
 
 # inference 함수: UploadFile 대신 bytes를 받도록 수정
 async def inference(image_bytes: bytes): # 매개변수 타입 변경
@@ -26,62 +33,85 @@ async def inference(image_bytes: bytes): # 매개변수 타입 변경
         raise HTTPException(status_code=500, detail=f"Error during image inference: {e}")
 
 async def create_record(user_id: int, original_image: UploadFile = File(...)):
-    """레코드 생성"""
+    record_id = None
+    message_on_no_detection = None
+    class_name_list = [] # 항상 초기화
+    boxes_list = []      # 항상 초기화
+
     try:
-        if original_image:
-            # 파일 내용을 비동기적으로 읽기 (한 번만)
-            contents = await original_image.read()
+        if not original_image or not original_image.filename:
+            raise HTTPException(status_code=400, detail="No image provided or image has no filename.")
 
-            # --- 파일 저장 로직 ---
-            save_dir = "flutter-back/original_images"
-            os.makedirs(save_dir, exist_ok=True)
-            original_image_path = os.path.join(save_dir, original_image.filename)
-            async with aiofiles.open(original_image_path, "wb") as f:
-                await f.write(contents) # 읽어둔 contents 사용
-            # -----------------------
+        contents = await original_image.read()
+        save_dir = "original_images"
+        os.makedirs(save_dir, exist_ok=True)
+        original_image_path = os.path.join(save_dir, original_image.filename)
+        async with aiofiles.open(original_image_path, "wb") as f:
+            await f.write(contents)
 
-            # inference 함수 호출 시 UploadFile 대신 읽어둔 contents(bytes) 전달
-            inference_result = await inference(contents)
+        inference_result = await inference(contents)
 
-            # 결과 처리 로직
-            if not inference_result or not hasattr(inference_result[0], 'boxes') or inference_result[0].boxes is None:
-                print("No objects detected or unexpected result format.")
-                # 파일은 저장되었으므로, 결과 없음 상태를 DB에 기록할지 결정 필요
-                return {"class_name": [], "boxes": [], "saved_path": original_image_path}
-
-            class_name = inference_result[0].boxes.cls
-            boxes = inference_result[0].boxes.xyxy
-            kr_name = inference_result[0].names # 모델의 클래스 이름 딕셔너리
-
-            class_name_list = []
-            boxes_list = []
-            pill_info_list = []
-            # 감지된 객체가 있는지 확인 (cls와 xyxy가 None이 아님)
-            if class_name is not None and boxes is not None:
-                for i in range(len(class_name)):
-                    try:
-                        # 클래스 ID를 int로 변환하여 이름 찾기
-                        cls_id = int(class_name[i].item()) # .item() 추가
-                        class_name_list.append(kr_name[cls_id])
-                        # 박스 텐서를 리스트로 변환하여 추가
-                        boxes_list.append(boxes[i].tolist()) # .tolist() 추가
-                        pill_info = search_pill(kr_name[cls_id])
-                        print(kr_name[cls_id], pill_info)
-                        # pill_info_list.append(search_pill(kr_name[cls_id]))
-                    except (KeyError, ValueError, IndexError) as e:
-                         print(f"Error processing detection {i}: {e}. Class ID: {class_name[i]}, Box: {boxes[i]}")
-                         # 오류 발생 시 처리 (예: 건너뛰거나 기본값 사용)
-                         pass # 일단 건너뛰기
-
-            # DB 저장 로직 추가 필요 (original_image_path 포함)
-            # await insert_record(user_id, original_image_path, class_name_list, boxes_list)
-            return {
-                "class_name": class_name_list, # 이제 문자열 리스트
-                "boxes": boxes_list,        # 이제 숫자 리스트들의 리스트
-                "pill_info": pill_info_list
-            }
+        if not inference_result or not hasattr(inference_result[0], 'boxes') or inference_result[0].boxes is None:
+            print("No objects detected or unexpected result format.")
+            message_on_no_detection = "No objects detected"
+            # class_name_list, boxes_list는 이미 빈 리스트로 초기화됨
         else:
-            return False # 이미지가 없는 경우
+            class_names_tensor = inference_result[0].boxes.cls
+            boxes_tensor = inference_result[0].boxes.xyxy
+            model_names_dict = inference_result[0].names
+
+            if class_names_tensor is not None and boxes_tensor is not None:
+                for i in range(len(class_names_tensor)):
+                    try:
+                        cls_id = int(class_names_tensor[i].item())
+                        detected_pill_name = model_names_dict[cls_id]
+                        class_name_list.append(detected_pill_name)
+                        current_box = boxes_tensor[i].tolist()
+                        boxes_list.append(current_box)
+                    except (KeyError, ValueError, IndexError) as e:
+                        print(f"Error processing detection {i}: {e}. Class ID: {class_names_tensor[i]}, Box: {boxes_tensor[i]}")
+                        pass 
+        
+        # DB 저장 로직: record_id 생성은 항상 시도 (알약 감지 여부와 무관하게)
+        try:
+            record_id = await insert_record(user_id=user_id, original_image_path=original_image_path)
+            if not record_id:
+                raise HTTPException(status_code=500, detail="Failed to create record in DB (no record_id returned).")
+            
+            print(f"Record created with ID: {record_id}")
+
+            if class_name_list: # 감지된 알약이 있을 경우에만 상세 정보 저장
+                await insert_record_detail(record_id=record_id, class_name_list=class_name_list, boxes_list=boxes_list)
+                print(f"Record details saved for Record ID: {record_id}")
+            elif message_on_no_detection: # 알약이 없고, 미감지 메시지가 설정된 경우
+                print(f"No pill objects detected for Record ID: {record_id}. No details saved.")
+            else: # 알약도 없고, 미감지 메시지도 없는 이상한 경우 (이론상 발생 안해야 함)
+                print(f"No pill objects and no detection message for Record ID: {record_id}. No details saved.")
+
+        except HTTPException as http_exc:
+            raise http_exc # DB 저장 중 발생한 HTTP 예외는 그대로 전달
+        except Exception as db_exc:
+            traceback.print_exc()
+            # DB 저장 실패 시 record_id가 None일 것이므로, 이 record_id를 포함한 오류는 필요 없음
+            raise HTTPException(status_code=500, detail=f"Error saving record to database: {str(db_exc)}")
+
+        grouped_class_names = _group_and_count_class_names(class_name_list)
+        
+        response_data = {
+            "id": record_id, 
+            "class_name": grouped_class_names
+        }
+        
+        if message_on_no_detection:
+             response_data["message"] = message_on_no_detection
+        print(f"Response data: {response_data}")
+        return response_data
+
+    except HTTPException as e:
+        # 이미 처리된 HTTPException은 그대로 발생
+        raise e
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        # 이 지점에서의 예외는 record_id가 확정되기 전이거나 매우 일반적인 오류일 가능성이 높음
+        # record_id를 포함한 오류 메시지는 불필요하거나 부정확할 수 있음
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred in create_record: {str(e)}")

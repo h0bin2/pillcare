@@ -31,6 +31,12 @@ consultations = sqlalchemy.Table(
         ["user_id"],
         ["users.id"],
         ondelete="CASCADE"
+    ),
+
+    sqlalchemy.ForeignKeyConstraint(
+        ["pharmacy_id"],
+        ["pharmacies.id"],
+        ondelete="CASCADE"
     )
 )
 
@@ -66,14 +72,34 @@ record_details = sqlalchemy.Table(
     sqlalchemy.Column("record_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("pill_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("pill_count", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column("box_x1", sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column("box_y1", sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column("box_x2", sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column("box_y2", sqlalchemy.Float, nullable=False),
     sqlalchemy.ForeignKeyConstraint(
         ["record_id"],
         ["records.id"],
         ondelete="CASCADE"
     ),
+    sqlalchemy.ForeignKeyConstraint(
+        ["pill_id"],
+        ["pills.id"],
+        ondelete="CASCADE"
+    ),
     
 )
-    
+
+pills = sqlalchemy.Table(
+    "pills",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("drug_code", sqlalchemy.String(length=255), nullable=False),
+    sqlalchemy.Column("drug_name", sqlalchemy.String(length=255), nullable=False),
+    sqlalchemy.Column("dosage", sqlalchemy.String(length=255), nullable=False),
+    sqlalchemy.Column("effect", sqlalchemy.String(length=255), nullable=False),
+    sqlalchemy.Column("caution", sqlalchemy.String(length=255), nullable=False),
+)
+
 # 참고: 위 테이블을 실제 DB에 생성하려면 Alembic 같은 마이그레이션 도구를 사용하거나,
 # 별도의 스크립트에서 metadata.create_all(engine)을 실행해야 합니다.
 # 예시:

@@ -7,4 +7,4 @@ class YOLOModel:
     def predict(self, image_path: str):
         return self.model.predict(image_path)
 
-model = YOLOModel("flutter-back/cv/yolo11n_best.pt")
+model = YOLOModel("/Users/hyeongbinham/StudioProjects/flutter-back/cv/yolo11n_best.pt")

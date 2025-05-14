@@ -4,6 +4,7 @@ import 'dart:async';
 import 'login_screen.dart';
 import 'main_screen.dart';
 import '../services/auth_service.dart';
+import 'main_screen.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({Key? key}) : super(key: key);

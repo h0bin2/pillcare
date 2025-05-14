@@ -1,3 +1,6 @@
+
+// TODO Implement this library.
+
 import 'package:intl/intl.dart';
 
 class ConsultationInfo {
@@ -42,3 +45,4 @@ class ConsultationInfo {
     return DateFormat('yyyy.MM.dd (E)', 'ko_KR').format(createdAt);
   }
 } 
+

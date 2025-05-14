@@ -1,3 +1,5 @@
+
+// TODO Implement this library.
 class UserInfo {
   final int id;
   final String kakaoId;
@@ -19,3 +21,4 @@ class UserInfo {
     );
   }
 }
+

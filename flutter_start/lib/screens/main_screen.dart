@@ -5,6 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'home_screen.dart';
 import 'camera_screen.dart';
+<<<<<<< HEAD
+import 'medicine_info_screen.dart';
+import 'pharmacy_screen.dart';
+=======
+>>>>>>> 7eac947c8f8a37995d4397f2156a312972862404
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
 import '../models/consultation_info.dart';
@@ -347,55 +352,84 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
               SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFD954),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      children: [
-                        Container(
-                          width: 65,
-                          height: 65,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.medication,
-                            color: Colors.black54,
-                            size: 40,
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          '오메가-3',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(width: 20),
-                    Expanded(
-                      child: Text(
-                        '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                          height: 1.4,
-                        ),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MedicineInfoScreen(
+                        name: '오메가-3',
+                        imagePath: 'assets/omega3.png',
+                        effects: [
+                          '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
+                          '혈중 중성지방 감소',
+                          '심혈관 건강 개선',
+                          '눈 건강 유지',
+                        ],
+                        usage: [
+                          '성인: 1일 1~2회, 1회 1캡슐 식후 복용',
+                          '어린이: 의사와 상담 후 복용',
+                        ],
+                        cautions: [
+                          '과다 복용 시 출혈 위험 증가',
+                          '임산부, 수유부는 복용 전 의사와 상담',
+                          '혈액 응고 억제제와 병용 시 주의',
+                        ],
                       ),
                     ),
-                  ],
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFFD954),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 65,
+                            height: 65,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.medication,
+                              color: Colors.black54,
+                              size: 40,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            '오메가-3',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: 24),
@@ -593,8 +627,10 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 onTap: () {
-                  // TODO: 약국 페이지로 이동
-                  print('약국 버튼이 눌렸습니다.');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PharmacyScreen()),
+                  );
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(

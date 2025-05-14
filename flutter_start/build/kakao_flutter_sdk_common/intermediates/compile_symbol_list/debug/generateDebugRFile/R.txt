@@ -1,2 +1,0 @@
-int layout activity_talk_auth_code 0x0
-int style TransparentCompat 0x0

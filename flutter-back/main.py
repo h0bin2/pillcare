@@ -2,6 +2,7 @@ import uvicorn
 import os
 from contextlib import asynccontextmanager # lifespan 사용 위해 임포트
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles # <--- StaticFiles 임포트
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, record, consultation, pill # 인증 라우터 임포트
 from db.database import connect_db, disconnect_db # DB 연결 함수 임포트
@@ -15,7 +16,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key_please_change")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
-# --- Lifespan 이벤트 핸들러 --- 
+# --- Lifespan 이벤트 핸들러 ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """애플리케이션 시작 시 DB 연결, 종료 시 연결 해제"""
@@ -41,6 +42,22 @@ app.add_middleware(
     allow_headers=["*"], # 모든 HTTP 헤더 허용
 )
 
+# --- 정적 파일 제공 설정 ---
+# 현재 main.py 파일이 위치한 디렉토리 (flutter-back)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# flutter-back 디렉토리 내의 original_images 폴더
+STATIC_FILES_DIR = os.path.join(BASE_DIR, "original_images")
+
+# original_images 디렉토리가 없으면 생성 (선택 사항, 이미지를 저장하는 로직에서 폴더를 생성한다면 필요 없을 수 있음)
+if not os.path.exists(STATIC_FILES_DIR):
+    os.makedirs(STATIC_FILES_DIR)
+    print(f"Created directory: {STATIC_FILES_DIR}") # 생성 확인 로그
+
+# '/original_images' URL 경로로 STATIC_FILES_DIR 디렉토리의 파일을 제공
+app.mount("/original_images", StaticFiles(directory=STATIC_FILES_DIR), name="original_images")
+print(f"Serving static files from: {STATIC_FILES_DIR} at /original_images") # 설정 확인 로그
+
+
 # --- 라우터 포함 ---
 # /api/auth 접두사를 가진 auth 라우터 포함
 app.include_router(auth.router)
@@ -52,7 +69,7 @@ app.include_router(pill.router)
 @app.get("/")
 def read_root():
     """서버 상태 확인용 기본 엔드포인트"""
-    return {"message": "Welcome to Flutter FastAPI Auth Backend! DB Integrated & Lifespan."}
+    return {"message": "Welcome to Flutter FastAPI Auth Backend! DB Integrated & Lifespan. Static files configured."}
 
 # 서버 실행 (개발용)
 if __name__ == "__main__":

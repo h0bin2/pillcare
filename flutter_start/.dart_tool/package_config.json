@@ -33,7 +33,7 @@
     },
     {
       "name": "camera_android",
-      "rootUri": "file:///C:/Users/user/AppData/Local/Pub/Cache/hosted/pub.dev/camera_android-0.10.10+2",
+      "rootUri": "file:///C:/Users/user/AppData/Local/Pub/Cache/hosted/pub.dev/camera_android-0.10.10+3",
       "packageUri": "lib/",
       "languageVersion": "3.6"
     },
@@ -537,7 +537,7 @@
     },
     {
       "name": "win32",
-      "rootUri": "file:///C:/Users/user/AppData/Local/Pub/Cache/hosted/pub.dev/win32-5.12.0",
+      "rootUri": "file:///C:/Users/user/AppData/Local/Pub/Cache/hosted/pub.dev/win32-5.13.0",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
@@ -554,7 +554,7 @@
       "languageVersion": "3.7"
     }
   ],
-  "generated": "2025-05-13T08:16:13.503578Z",
+  "generated": "2025-05-14T08:39:50.559844Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/flutter",

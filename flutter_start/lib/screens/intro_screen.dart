@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'main_screen.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
 

@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 import 'home_screen.dart';
 import 'camera_screen.dart';
+<<<<<<< HEAD
 import 'medicine_info_screen.dart';
 import 'pharmacy_screen.dart';
+=======
+>>>>>>> 7eac947c8f8a37995d4397f2156a312972862404
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
 import '../models/consultation_info.dart';
@@ -20,6 +24,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   late String _currentDate;
   Timer? _timer;
+  late Future<UserInfo?> _userInfoFuture;
+  Future<List<ConsultationInfo>>? _consultationHistoryFuture;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
@@ -45,6 +51,53 @@ class _MainScreenState extends State<MainScreen> {
         _updateDate();
       }
     });
+
+    _userInfoFuture = _loadUserInfo();
+    _userInfoFuture.then((userInfo) {
+      if (userInfo != null && mounted) {
+        if (userInfo.id != null) {
+          setState(() {
+            _consultationHistoryFuture = AuthService.getConsultationHistory(userInfo.id!);
+          });
+        } else {
+          printError("initState: UserInfo에 id 필드가 없습니다. 상담 내역을 로드할 수 없습니다.");
+          setState(() {
+            _consultationHistoryFuture = Future.value([]);
+          });
+        }
+      } else if (mounted) {
+        printError("initState: 사용자 정보를 가져오지 못했습니다.");
+        setState(() {
+          _consultationHistoryFuture = Future.value([]);
+        });
+      }
+    }).catchError((error) {
+      if (mounted) {
+        printError("initState: 사용자 정보 로드 중 오류: $error");
+        setState(() {
+          _consultationHistoryFuture = Future.error(error);
+        });
+      }
+    });
+  }
+
+  Future<UserInfo?> _loadUserInfo() async {
+    try {
+      final userInfoMap = await AuthService.getCurrentUserInfo();
+      if (userInfoMap != null) {
+        return UserInfo.fromJson(userInfoMap);
+      }
+      return null;
+    } catch (e) {
+      print("Error in _loadUserInfo: $e");
+      return null;
+    }
+  }
+
+  void printError(String message) {
+    if (kDebugMode) {
+      print('\x1B[31m$message\x1B[0m');
+    }
   }
 
   @override
@@ -209,41 +262,62 @@ class _MainScreenState extends State<MainScreen> {
                         Expanded(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '최순자',
-                                        style: TextStyle(
-                                          fontSize: constraints.maxHeight * 0.3,
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF000080),
-                                        ),
+                              FutureBuilder<UserInfo?>(
+                                future: _userInfoFuture,
+                                builder: (context, snapshot) {
+                                  Widget nameWidget;
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    nameWidget = SizedBox(
+                                        width: constraints.maxHeight * 0.3,
+                                        height: constraints.maxHeight * 0.3,
+                                        child: CircularProgressIndicator(strokeWidth: 2));
+                                  } else if (snapshot.hasError) {
+                                    printError("Error loading user info in FutureBuilder: ${snapshot.error}");
+                                    nameWidget = Text('사용자 로딩 오류', style: TextStyle(fontSize: constraints.maxHeight * 0.3, color: Colors.red));
+                                  } else if (snapshot.hasData && snapshot.data != null) {
+                                    final userInfo = snapshot.data!;
+                                    nameWidget = Text(
+                                      userInfo.nickname ?? '최순자',
+                                      style: TextStyle(
+                                        fontSize: constraints.maxHeight * 0.3,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFF000080),
                                       ),
+                                    );
+                                  } else {
+                                    nameWidget = Text('방문자', style: TextStyle(fontSize: constraints.maxHeight * 0.3, fontWeight: FontWeight.w900, color: Color(0xFF000080)));
+                                  }
+                                  
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          nameWidget,
+                                          Text(
+                                            '님',
+                                            style: TextStyle(
+                                              fontSize: constraints.maxHeight * 0.2,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: constraints.maxHeight * 0.05),
                                       Text(
-                                        '님',
+                                        '약 드셨나요?',
                                         style: TextStyle(
                                           fontSize: constraints.maxHeight * 0.2,
                                           color: Colors.black,
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  SizedBox(height: constraints.maxHeight * 0.05),
-                                  Text(
-                                    '약 드셨나요?',
-                                    style: TextStyle(
-                                      fontSize: constraints.maxHeight * 0.2,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
+                              Spacer(),
                               Container(
                                 width: constraints.maxHeight * 0.8,
                                 height: constraints.maxHeight * 0.8,
@@ -373,150 +447,100 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
               SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade500),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(20),
+              FutureBuilder<List<ConsultationInfo>>(
+                future: _consultationHistoryFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    printError("Error loading consultation history: ${snapshot.error}");
+                    return Center(child: Text('상담 내역을 불러오는 중 오류가 발생했습니다.', style: TextStyle(color: Colors.red)));
+                  } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                    final consultations = snapshot.data!;
+                    return Container(
                       decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade300),
+                        border: Border.all(color: Colors.grey.shade500),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: consultations.length,
+                        itemBuilder: (context, index) {
+                          final consultation = consultations[index];
+                          return Container(
+                            padding: EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            consultation.pharmacyName,
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            consultation.formattedCreatedAt,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        consultation.history,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.black,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Colors.grey.shade300,
+                          indent: 20,
+                          endIndent: 20,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '조은약국',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      '2025.04.07(월)',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  '혈압약과 같이 먹어도 되는 영양제 상담',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => _showPhoneOptions(context, '02-123-4567'),
-                              child: Container(
-                                padding: EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Color(0xFFFFD954),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.phone_outlined,
-                                  color: Colors.orange,
-                                  size: 28,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    );
+                  } else {
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 70, horizontal: 20),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '강릉약국',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      '2025.04.14(월)',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  '오메가-3 가격 문의',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => _showPhoneOptions(context, '02-123-4567'),
-                              child: Container(
-                                padding: EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Color(0xFFFFD954),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.phone_outlined,
-                                  color: Colors.orange,
-                                  size: 28,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: Center(
+                        child: Text(
+                          '최근 상담 내역이 없습니다.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    );
+                  }
+                },
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 10),
             ],
           ),
         ),
@@ -645,7 +669,7 @@ class _MainScreenState extends State<MainScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 80, // 버튼 크기 키움
+          width: 80,
           height: 80,
           decoration: BoxDecoration(
             color: Colors.yellow[700],
@@ -653,7 +677,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           child: Icon(
             icon,
-            size: 40, // 아이콘 크기 키움
+            size: 40,
             color: Colors.black,
           ),
         ),
@@ -661,7 +685,7 @@ class _MainScreenState extends State<MainScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 18, // 글씨 크기 키움
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),

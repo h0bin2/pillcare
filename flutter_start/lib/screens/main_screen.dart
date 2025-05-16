@@ -10,7 +10,7 @@ import 'pharmacy_screen.dart';
 
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
-import '../models/consultation_info.dart';
+git commit -m “any commit message”import '../models/consultation_info.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);

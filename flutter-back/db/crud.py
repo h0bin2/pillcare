@@ -272,5 +272,5 @@ async def get_records_with_details_by_user_id(user_id: int) -> list:
 
         record_data['details'] = [dict(detail) for detail in record_details_list] 
         result_records.append(record_data)
-
+    # print(result_records)
     return result_records

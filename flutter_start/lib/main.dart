@@ -3,6 +3,7 @@ import 'screens/intro_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,13 @@ void main() async {
   } else {
     print('NATIVE_APP_KEY가 .env 파일에 설정되지 않았습니다.');
   }
+
+  await NaverMapSdk.instance.initialize(
+      clientId: 'c22uzm0ayz',
+      onAuthFailed: (ex) {
+        print("********* 네이버맵 인증오류 : $ex *********");
+      });
+
   runApp(const MyApp());
 }
 

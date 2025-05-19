@@ -5,14 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'home_screen.dart';
 import 'camera_screen.dart';
-<<<<<<< HEAD
 import 'medicine_info_screen.dart';
 import 'pharmacy_screen.dart';
-=======
->>>>>>> 7eac947c8f8a37995d4397f2156a312972862404
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
-git commit -m “any commit message”import '../models/consultation_info.dart';
+import '../models/consultation_info.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);

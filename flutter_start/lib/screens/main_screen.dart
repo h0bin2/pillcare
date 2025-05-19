@@ -7,6 +7,7 @@ import 'home_screen.dart';
 import 'camera_screen.dart';
 import 'medicine_info_screen.dart';
 import 'pharmacy_screen.dart';
+
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
 import '../models/consultation_info.dart';

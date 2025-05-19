@@ -154,9 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (imagePath.startsWith('http')) {
         imageUrl = imagePath;
       } else if (!imagePath.startsWith('/')) {
-        imageUrl = 'http://192.168.45.15:8000/$imagePath';
+        imageUrl = 'http://172.16.29.129:8001/$imagePath';
       } else {
-        imageUrl = 'http://192.168.45.15:8000$imagePath';
+        imageUrl = 'http://172.16.29.129:8001$imagePath';
       }
       canLoadImage = true;
     }

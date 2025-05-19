@@ -82,4 +82,4 @@ if __name__ == "__main__":
     print(f"Using ALGORITHM: {ALGORITHM}")
     print(f"Token expires in: {ACCESS_TOKEN_EXPIRE_MINUTES} minutes")
     # DB 연결 정보는 connect_db 함수에서 출력
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)

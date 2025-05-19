@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="flutter_start"
         android:name="${applicationName}"
@@ -21,6 +25,10 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- 네이버 지도 클라이언트 ID 설정 -->
+            <meta-data
+                android:name="com.naver.maps.map.NCP_KEY_ID"
+                android:value="c22uzm0ayz" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

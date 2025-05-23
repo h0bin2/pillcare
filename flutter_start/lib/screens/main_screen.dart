@@ -7,6 +7,7 @@ import 'home_screen.dart';
 import 'camera_screen.dart';
 import 'medicine_info_screen.dart';
 import 'pharmacy_screen.dart';
+import 'settings_screen.dart';
 
 import '../services/auth_service.dart';
 import '../models/user_info.dart';
@@ -19,7 +20,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   late String _currentDate;
   Timer? _timer;
   late Future<UserInfo?> _userInfoFuture;
@@ -77,6 +78,38 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MainScreen이 다시 보일 때마다 상담 내역 새로 불러오기
+    if (ModalRoute.of(context)?.isCurrent ?? false) {
+      _userInfoFuture = _loadUserInfo();
+      _userInfoFuture.then((userInfo) {
+        if (userInfo != null && mounted) {
+          if (userInfo.id != null) {
+            setState(() {
+              _consultationHistoryFuture = AuthService.getConsultationHistory(userInfo.id!);
+            });
+          } else {
+            setState(() {
+              _consultationHistoryFuture = Future.value([]);
+            });
+          }
+        } else if (mounted) {
+          setState(() {
+            _consultationHistoryFuture = Future.value([]);
+          });
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _consultationHistoryFuture = Future.error(error);
+          });
+        }
+      });
+    }
   }
 
   Future<UserInfo?> _loadUserInfo() async {
@@ -162,7 +195,7 @@ class _MainScreenState extends State<MainScreen> {
                 icon: Icon(Icons.phone, color: Colors.black, size: 32),
                 label: Text(
                   '전화상담요청',
-                  style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'NotoSansKR'),
                 ),
                 onPressed: () {
                   // TODO: 전화상담요청 로직
@@ -190,8 +223,8 @@ class _MainScreenState extends State<MainScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(phoneNumber, style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text('전화걸기', style: TextStyle(color: Colors.black, fontSize: 14)),
+                        Text(phoneNumber, style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'NotoSansKR')),
+                        Text('전화걸기', style: TextStyle(color: Colors.black, fontSize: 14, fontFamily: 'NotoSansKR')),
                       ],
                     ),
                   ],
@@ -213,7 +246,12 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.settings, color: Colors.black),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsScreen()),
+            );
+          },
         ),
         actions: [
           IconButton(
@@ -254,6 +292,7 @@ class _MainScreenState extends State<MainScreen> {
                           style: TextStyle(
                             color: Colors.black54,
                             fontSize: constraints.maxHeight * 0.1,
+                            fontFamily: 'NotoSansKR',
                           ),
                         ),
                         SizedBox(height: constraints.maxHeight * 0.05),
@@ -265,14 +304,15 @@ class _MainScreenState extends State<MainScreen> {
                                 future: _userInfoFuture,
                                 builder: (context, snapshot) {
                                   Widget nameWidget;
+                                  String? profileImageUrl;
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     nameWidget = SizedBox(
                                         width: constraints.maxHeight * 0.3,
                                         height: constraints.maxHeight * 0.3,
                                         child: CircularProgressIndicator(strokeWidth: 2));
                                   } else if (snapshot.hasError) {
-                                    printError("Error loading user info in FutureBuilder: ${snapshot.error}");
-                                    nameWidget = Text('사용자 로딩 오류', style: TextStyle(fontSize: constraints.maxHeight * 0.3, color: Colors.red));
+                                    printError("Error loading user info in FutureBuilder: \\${snapshot.error}");
+                                    nameWidget = Text('사용자 로딩 오류', style: TextStyle(fontSize: constraints.maxHeight * 0.3, color: Colors.red, fontFamily: 'NotoSansKR'));
                                   } else if (snapshot.hasData && snapshot.data != null) {
                                     final userInfo = snapshot.data!;
                                     nameWidget = Text(
@@ -281,10 +321,12 @@ class _MainScreenState extends State<MainScreen> {
                                         fontSize: constraints.maxHeight * 0.3,
                                         fontWeight: FontWeight.w900,
                                         color: Color(0xFF000080),
+                                        fontFamily: 'NotoSansKR',
                                       ),
                                     );
+                                    profileImageUrl = userInfo.profileImageUrl;
                                   } else {
-                                    nameWidget = Text('방문자', style: TextStyle(fontSize: constraints.maxHeight * 0.3, fontWeight: FontWeight.w900, color: Color(0xFF000080)));
+                                    nameWidget = Text('방문자', style: TextStyle(fontSize: constraints.maxHeight * 0.3, fontWeight: FontWeight.w900, color: Color(0xFF000080), fontFamily: 'NotoSansKR'));
                                   }
                                   
                                   return Column(
@@ -299,6 +341,7 @@ class _MainScreenState extends State<MainScreen> {
                                             style: TextStyle(
                                               fontSize: constraints.maxHeight * 0.2,
                                               color: Colors.black,
+                                              fontFamily: 'NotoSansKR',
                                             ),
                                           ),
                                         ],
@@ -309,6 +352,7 @@ class _MainScreenState extends State<MainScreen> {
                                         style: TextStyle(
                                           fontSize: constraints.maxHeight * 0.2,
                                           color: Colors.black,
+                                          fontFamily: 'NotoSansKR',
                                         ),
                                       ),
                                     ],
@@ -316,16 +360,31 @@ class _MainScreenState extends State<MainScreen> {
                                 },
                               ),
                               Spacer(),
-                              Container(
-                                width: constraints.maxHeight * 0.8,
-                                height: constraints.maxHeight * 0.8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                    width: 6,
-                                  ),
-                                ),
+                              FutureBuilder<UserInfo?>(
+                                future: _userInfoFuture,
+                                builder: (context, snapshot) {
+                                  String? profileImageUrl;
+                                  if (snapshot.hasData && snapshot.data != null) {
+                                    profileImageUrl = snapshot.data!.profileImageUrl;
+                                  }
+                                  return Container(
+                                    width: constraints.maxHeight * 0.8,
+                                    height: constraints.maxHeight * 0.8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                        width: 6,
+                                      ),
+                                      image: (profileImageUrl != null && profileImageUrl.isNotEmpty)
+                                          ? DecorationImage(
+                                              image: NetworkImage(profileImageUrl),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -345,6 +404,7 @@ class _MainScreenState extends State<MainScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: Colors.black,
+                      fontFamily: 'NotoSansKR',
                     ),
                   ),
                 ],
@@ -386,9 +446,10 @@ class _MainScreenState extends State<MainScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
                             width: 65,
@@ -410,19 +471,25 @@ class _MainScreenState extends State<MainScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               color: Colors.black,
+                              fontFamily: 'NotoSansKR',
                             ),
                           ),
                         ],
                       ),
                       SizedBox(width: 20),
                       Expanded(
-                        child: Text(
-                          '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                            height: 1.4,
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            '신체 염증을 줄이고 혈액 건강에 도움이 됩니다.',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                              height: 1.4,
+                              fontFamily: 'NotoSansKR',
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -430,7 +497,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -440,6 +507,7 @@ class _MainScreenState extends State<MainScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: Colors.black,
+                      fontFamily: 'NotoSansKR',
                     ),
                   ),
                 ],
@@ -451,8 +519,8 @@ class _MainScreenState extends State<MainScreen> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
-                    printError("Error loading consultation history: ${snapshot.error}");
-                    return Center(child: Text('상담 내역을 불러오는 중 오류가 발생했습니다.', style: TextStyle(color: Colors.red)));
+                    printError("Error loading consultation history: \\${snapshot.error}");
+                    return Center(child: Text('상담 내역을 불러오는 중 오류가 발생했습니다.', style: TextStyle(color: Colors.red, fontFamily: 'NotoSansKR')));
                   } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                     final consultations = snapshot.data!;
                     return Container(
@@ -481,6 +549,7 @@ class _MainScreenState extends State<MainScreen> {
                                             style: TextStyle(
                                               fontSize: 22,
                                               fontWeight: FontWeight.w900,
+                                              fontFamily: 'NotoSansKR',
                                             ),
                                           ),
                                           SizedBox(width: 10),
@@ -489,6 +558,7 @@ class _MainScreenState extends State<MainScreen> {
                                             style: TextStyle(
                                               fontSize: 14,
                                               color: Colors.grey.shade700,
+                                              fontFamily: 'NotoSansKR',
                                             ),
                                           ),
                                         ],
@@ -500,6 +570,7 @@ class _MainScreenState extends State<MainScreen> {
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,
                                           color: Colors.black,
+                                          fontFamily: 'NotoSansKR',
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -531,20 +602,20 @@ class _MainScreenState extends State<MainScreen> {
                       child: Center(
                         child: Text(
                           '최근 상담 내역이 없습니다.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                          style: TextStyle(fontSize: 16, color: Colors.grey.shade700, fontFamily: 'NotoSansKR'),
                         ),
                       ),
                     );
                   }
                 },
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 5),
             ],
           ),
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -572,11 +643,12 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        '기록',
+                         '기록',
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          fontFamily: 'NotoSansKR',
                         ),
                       ),
                     ],
@@ -613,6 +685,7 @@ class _MainScreenState extends State<MainScreen> {
                           color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          fontFamily: 'NotoSansKR',
                         ),
                       ),
                     ],
@@ -620,41 +693,55 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ),
-            Material(
-              color: Color(0xFFFFD954),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => PharmacyScreen()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: 105,
-                  height: 90,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.black,
-                        size: 42,
+            FutureBuilder<UserInfo?>(
+              future: _userInfoFuture,
+              builder: (context, snapshot) {
+                return Material(
+                  color: Color(0xFFFFD954),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: () {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PharmacyScreen(userInfo: snapshot.data!),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('사용자 정보를 불러올 수 없습니다.')),
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: 105,
+                      height: 90,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.black,
+                            size: 42,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '약국',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'NotoSansKR',
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        '약국',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -685,11 +772,10 @@ class _MainScreenState extends State<MainScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            fontFamily: 'NotoSansKR',
           ),
         ),
       ],
     );
   }
 }
-
-

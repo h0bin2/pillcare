@@ -30,7 +30,7 @@ class _IntroScreenState extends State<IntroScreen> {
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => isLoggedIn ? const MainScreen() : const LoginScreen(),
+          builder: (_) => isLoggedIn ? MainScreen() : LoginScreen(),
         ),
       );
     }

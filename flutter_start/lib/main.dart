@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/intro_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'app_settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +34,15 @@ void main() async {
         print("********* 네이버맵 인증오류 : $ex *********");
       });
 
-  runApp(const MyApp());
+  final appSettings = AppSettingsProvider();
+  await appSettings.loadSettings();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: appSettings,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -40,21 +50,27 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PILLCARE',
-      theme: ThemeData(
-        primarySwatch: Colors.amber,
-        scaffoldBackgroundColor: Colors.white,
-      ),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('ko', 'KR'),
-      ],
-      home: const IntroScreen(),
+    return Consumer<AppSettingsProvider>(
+      builder: (context, appSettings, child) {
+        return MaterialApp(
+          title: 'PILLCARE',
+          theme: ThemeData(
+            primarySwatch: Colors.amber,
+            scaffoldBackgroundColor: appSettings.isDarkMode ? Colors.black : Colors.white,
+            brightness: appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+            fontFamily: 'NotoSansKR',
+          ),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ko', 'KR'),
+          ],
+          home: const IntroScreen(),
+        );
+      },
     );
   }
 }

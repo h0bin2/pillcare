@@ -91,11 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
           final String createdAtString = record['created_at'] as String;
           // 백엔드가 +09:00 와 같은 오프셋을 포함한 ISO 문자열을 반환한다고 가정
           // 예: "2023-10-28T14:30:00+09:00"
-          final DateTime recordDateTime = DateTime.parse(createdAtString); // KST를 인지하는 DateTime 객체
-
-          // recordDateTime (KST)을 디바이스의 local timezone으로 변환하여 비교
-          // _selectedDay는 사용자의 local timezone에서의 00:00:00 임
-          return isSameDay(recordDateTime.toLocal(), _selectedDay!);
+          final DateTime recordDateTime = DateTime.parse(createdAtString);
+          final kstDateTime = recordDateTime.toLocal();
+          final displayString = DateFormat('HH:mm').format(kstDateTime);
+          // print('created_at: $createdAtString, parsed: $recordDateTime, local: $kstDateTime');
+          return isSameDay(kstDateTime, _selectedDay!);
         } else {
           if(kDebugMode) print('[HomeScreen] Invalid or missing created_at for record: ${record['id']}');
           return false;
@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     try {
       // createdAtIsoString은 이미 KST이며, 오프셋 정보(+09:00)를 포함하고 있음
-      final DateTime dateTimeKST = DateTime.parse(createdAtIsoString);
+      final DateTime dateTimeKST = DateTime.parse(createdAtIsoString).toLocal();
       return DateFormat('HH:mm').format(dateTimeKST); // 'HH:mm' 형식으로 시간만 표시
     } catch (e) {
       if (kDebugMode) {
@@ -148,15 +148,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final String? imagePath = recordData['original_image_path'];
     final List<dynamic> pillDetails = recordData['details'] ?? [];
 
-    String imageUrl = 'assets/images/placeholder.png';
+    String imageUrl = 'https://via.placeholder.com/400x200.png?text=No+Image';
     bool canLoadImage = false;
     if (imagePath != null && imagePath.isNotEmpty) {
       if (imagePath.startsWith('http')) {
         imageUrl = imagePath;
       } else if (!imagePath.startsWith('/')) {
-        imageUrl = 'http://172.16.29.129:8001/$imagePath';
+        imageUrl = 'http://192.168.45.208:5555/$imagePath';
       } else {
-        imageUrl = 'http://172.16.29.129:8001$imagePath';
+        imageUrl = 'http://192.168.45.208:5555$imagePath';
       }
       canLoadImage = true;
     }
@@ -198,47 +198,131 @@ class _HomeScreenState extends State<HomeScreen> {
               final String pillName = detail['pill_name'] ?? '이름 모름';
               final int count = detail['pill_count'] ?? 0;
               final String effect = detail['effect'] ?? '효능 정보 없음';
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Icon(Icons.medication, color: Color(0xFFFFB300), size: 40),
+              // 상세/삭제 다이얼로그 함수
+              void _showPillActionDialog() {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: Text(
+                        pillName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.black),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$pillName ($count개)',
-                            style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 20),
+                      content: Text(
+                        effect,
+                        style: const TextStyle(fontSize: 18, color: Colors.black87),
+                      ),
+                      actions: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFF3D1),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           ),
-                          const SizedBox(height: 4),
-                          Text('• $effect', style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
-                        ],
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(
+                              context,
+                              '/medicine_info',
+                              arguments: detail,
+                            );
+                          },
+                          child: const Text('상세보기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD954),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                          ),
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final recordId = recordData['id'];
+                            final pillId = detail['pill_id'];
+                            if (recordId != null && pillId != null) {
+                              final success = await RecordService.deletePill(recordId: recordId, pillId: pillId);
+                              if (success) {
+                                setState(() {
+                                  pillDetails.remove(detail);
+                                });
+                                // pillDetails가 0개가 되면 record도 삭제
+                                if (pillDetails.isEmpty) {
+                                  final recordDeleteSuccess = await RecordService.deleteRecord(recordId);
+                                  if (recordDeleteSuccess) {
+                                    setState(() {
+                                      _userRecords?.remove(recordData);
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('마지막 약이 삭제되어 기록도 함께 삭제되었습니다.'), backgroundColor: Color(0xFFFFD954)),
+                                    );
+                                  }
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('약 정보가 삭제되었습니다.'), backgroundColor: Color(0xFFFFD954)),
+                                  );
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('약 정보 삭제에 실패했습니다.'), backgroundColor: Colors.red),
+                                );
+                              }
+
+                            }
+                          },
+                          child: const Text('삭제', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
+              return GestureDetector(
+                onTap: _showPillActionDialog,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFEEEEEE)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          color: const Color(0xFFF5F5F5),
+                          child: const Icon(Icons.medication, color: Color(0xFFFFB300), size: 40),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.alarm, color: Color(0xFFFFB300), size: 32),
-                      onPressed: () {
-                        _showAlarmPicker(context);
-                      },
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$pillName ($count개)',
+                              style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('• $effect', style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.alarm, color: Color(0xFFFFB300), size: 32),
+                        onPressed: () {
+                          _showAlarmPicker(context);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
             }).toList()
@@ -384,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const MainScreen()),
+              MaterialPageRoute(builder: (context) => MainScreen()),
             );
           },
           child: Padding(

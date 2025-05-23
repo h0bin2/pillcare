@@ -314,7 +314,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                     onPressed: () {
                                       Navigator.pushReplacement(
                                         context,
-                                        MaterialPageRoute(builder: (context) => const MainScreen()),
+                                        MaterialPageRoute(builder: (context) => MainScreen()),
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),

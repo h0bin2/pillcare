@@ -7,8 +7,9 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from schemas.schemas import TokenData, UserInfo, RefreshTokenData
 from dotenv import load_dotenv
-# DB CRUD 함수 임포트
 from db.crud import get_user_by_kakao_id
+from sqlalchemy.orm import Session
+from db.database import get_db
 
 load_dotenv()
 
@@ -110,7 +111,7 @@ def verify_token(token: str, token_type: str = "access") -> dict:
         print(f"{token_type.capitalize()} token decoding error: {e}")
         raise credentials_exception
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserInfo:
     """Access Token 검증 후 DB에서 사용자 정보를 조회하여 반환"""
     payload = verify_token(token, token_type="access")
     kakao_id: str = payload.get("sub")
@@ -123,7 +124,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
         )
 
     # --- DB에서 사용자 조회 --- 
-    user = await get_user_by_kakao_id(kakao_id=kakao_id)
+    user = get_user_by_kakao_id(kakao_id=kakao_id, db=db)
     if user is None:
         # 토큰은 유효하지만 해당 사용자가 DB에 없는 경우 (계정 삭제 등 비정상 상황)
         print(f"경고: 유효한 Access Token의 사용자({kakao_id})를 DB에서 찾을 수 없음.")

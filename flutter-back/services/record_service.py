@@ -12,6 +12,7 @@ import os # os 임포트
 from collections import Counter # Counter 추가
 from db.crud import insert_record, insert_record_detail, get_pill_info
 from services.pill_service import get_pill_info_detail, search_pill
+from db.database import get_db
 
 def _group_and_count_class_names(class_name_list: list[str]) -> dict[str, int]:
     """주어진 클래스 이름 리스트에서 각 이름의 개수를 세어 딕셔너리로 반환합니다."""
@@ -32,7 +33,7 @@ async def inference(image_bytes: bytes): # 매개변수 타입 변경
         # Pillow가 이미지 식별 못하는 경우 포함하여 오류 처리
         raise HTTPException(status_code=500, detail=f"Error during image inference: {e}")
 
-async def create_record(user_id: int, original_image: UploadFile = File(...)):
+async def create_record(user_id: int, original_image: UploadFile = File(...), db: Session = Depends(get_db)):
     record_id = None
     message_on_no_detection = None
     class_name_list = [] # 항상 초기화
@@ -74,7 +75,7 @@ async def create_record(user_id: int, original_image: UploadFile = File(...)):
         
         # DB 저장 로직: record_id 생성은 항상 시도 (알약 감지 여부와 무관하게)
         try:
-            record_id = await insert_record(user_id=user_id, original_image_path=original_image_path)
+            record_id = await insert_record(user_id=user_id, original_image_path=original_image_path, db=db)
             if not record_id:
                 raise HTTPException(status_code=500, detail="Failed to create record in DB (no record_id returned).")
             

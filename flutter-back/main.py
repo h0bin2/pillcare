@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles # <--- StaticFiles 임포트
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, record, consultation, pill # 인증 라우터 임포트
-from db.database import connect_db, disconnect_db # DB 연결 함수 임포트
+from db.database import get_db # DB 연결 함수 임포트
 from dotenv import load_dotenv
 
 # .env 파일 로드 (선택적)
@@ -20,9 +20,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """애플리케이션 시작 시 DB 연결, 종료 시 연결 해제"""
-    await connect_db()
+    db = get_db()
     yield # 애플리케이션 실행
-    await disconnect_db()
 
 # FastAPI 앱 인스턴스 생성 (lifespan 인자 추가)
 app = FastAPI(title="Flutter FastAPI Auth Example with DB", lifespan=lifespan)
@@ -82,4 +81,4 @@ if __name__ == "__main__":
     print(f"Using ALGORITHM: {ALGORITHM}")
     print(f"Token expires in: {ACCESS_TOKEN_EXPIRE_MINUTES} minutes")
     # DB 연결 정보는 connect_db 함수에서 출력
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=5555, reload=True)

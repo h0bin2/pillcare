@@ -31,6 +31,7 @@ class UserInfo(BaseModel):
     kakao_id: str
     nickname: str | None = None
     id: int | None = None
+    kakao_profile_image_url: str | None = None
     # 필요에 따라 다른 사용자 정보 필드 추가 가능 
 
 class PillInfo(BaseModel):
@@ -53,10 +54,12 @@ class PillInfoDetail(BaseModel):
 
 class ConsultationHistory(BaseModel):
     """상담 내역 조회 모델"""
-    id: int
+    id: Optional[int] = None
     user_id: int
     pharmacy_id: int
     pharmacy_name: str # 약국 이름 (DB 조인 또는 별도 필드 필요)
+    pharmacy_address: str
+    pharmacy_phone: str
     created_at: datetime
     updated_at: datetime
     status: str

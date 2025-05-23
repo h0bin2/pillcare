@@ -1,10 +1,12 @@
 import requests
 from typing import List
 from schemas.schemas import PillInfo, PillInfoDetail
-
+from db.database import get_db
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
 #약 정보가 리스트로 뜸
-def search_pill(search_word: str) -> List[PillInfo]:
+def search_pill(search_word: str, db: Session = Depends(get_db)) -> List[PillInfo]:
     """약 정보 검색"""
     url = "https://www.health.kr/searchDrug/ajax/ajax_commonSearch.asp"
     params = {
@@ -26,7 +28,7 @@ def search_pill(search_word: str) -> List[PillInfo]:
     else:
         return []
 
-def get_pill_info_detail(drug_code: str) -> PillInfoDetail:
+def get_pill_info_detail(drug_code: str, db: Session = Depends(get_db)) -> PillInfoDetail:
     """약 상세 정보 조회"""
     url = 'https://www.health.kr/searchDrug/ajax/ajax_result_drug2.asp'
     params = {

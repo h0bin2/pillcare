@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await AuthService.loginWithKakao();
       if (success && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+          MaterialPageRoute(builder: (_) => MainScreen()),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const MainScreen()),
+                      MaterialPageRoute(builder: (_) => MainScreen()),
                     );
                   },
                   child: const Text('로그인 없이 진행 (테스트용)'),

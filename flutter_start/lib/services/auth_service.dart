@@ -26,7 +26,7 @@ class AuthService {
 
   // --- Constants ---
   // 실제 운영 환경에서는 환경 변수 등으로 관리하는 것이 좋습니다.
-  static const String _baseUrl = 'http://172.16.29.129:8001';
+  static const String _baseUrl = 'http://192.168.45.208:5555';
   static final _storage = const FlutterSecureStorage();
   static const String _accessTokenKey = 'jwt_access_token';
   static const String _refreshTokenKey = 'jwt_refresh_token';

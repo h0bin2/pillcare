@@ -15,6 +15,8 @@ from services.auth_service import (
 from db.crud import get_or_create_user, get_user_by_kakao_id
 from datetime import timedelta
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from db.database import get_db
 
 router = APIRouter(
     prefix="/api/auth", # API 경로 접두사 설정
@@ -22,7 +24,7 @@ router = APIRouter(
 )
 
 @router.post("/kakao")
-async def kakao_login_for_access_token(token_data: KakaoToken) -> JSONResponse:
+async def kakao_login_for_access_token(token_data: KakaoToken, db: Session = Depends(get_db)) -> JSONResponse:
     """
     카카오 토큰을 받아 사용자 정보를 확인하고, DB에서 사용자를 조회/생성한 후
     JWT Access Token과 Refresh Token을 발급합니다.
@@ -43,10 +45,11 @@ async def kakao_login_for_access_token(token_data: KakaoToken) -> JSONResponse:
             )
 
         # --- DB에서 사용자 조회 또는 생성 --- 
-        db_user = await get_or_create_user(
+        db_user = get_or_create_user(
             kakao_id=kakao_id,
             nickname=nickname,
-            profile_image_url=profile_image_url 
+            profile_image_url=profile_image_url,
+            db=db
         )
         # ----------------------------------
 
@@ -76,7 +79,7 @@ async def kakao_login_for_access_token(token_data: KakaoToken) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "로그인 처리 중 서버 오류 발생"})
 
 @router.post("/refresh", response_model=Token)
-async def refresh_access_token(refresh_request: RefreshTokenRequest):
+async def refresh_access_token(refresh_request: RefreshTokenRequest, db: Session = Depends(get_db)):
     """Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다."""
     try:
         payload = verify_token(refresh_request.refresh_token, token_type="refresh")
@@ -85,7 +88,7 @@ async def refresh_access_token(refresh_request: RefreshTokenRequest):
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid refresh token payload"})
 
         # --- DB에서 사용자 정보 조회 (Access Token 페이로드용) --- 
-        db_user = await get_user_by_kakao_id(kakao_id=kakao_id)
+        db_user = await get_user_by_kakao_id(kakao_id=kakao_id, db=db)
         if not db_user:
              # Refresh Token은 유효하지만 DB에 사용자가 없는 경우 (비정상 상태)
              print(f"경고: 유효한 Refresh Token의 사용자({kakao_id})를 DB에서 찾을 수 없음.")

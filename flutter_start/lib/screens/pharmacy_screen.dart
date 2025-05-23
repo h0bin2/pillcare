@@ -3,9 +3,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // For jsonDecode
 import 'package:flutter_naver_map/flutter_naver_map.dart'; // 네이버 지도 패키지
+import 'subscription_screen.dart';
+import '../models/user_info.dart';
 
 class PharmacyScreen extends StatelessWidget {
-  const PharmacyScreen({super.key});
+  final UserInfo userInfo;
+  const PharmacyScreen({required this.userInfo, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -65,14 +68,15 @@ class PharmacyScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: _PharmacyScreenWithCustomDrag(pharmacies: pharmacies),
+      body: _PharmacyScreenWithCustomDrag(pharmacies: pharmacies, userInfo: userInfo),
     );
   }
 }
 
 class _PharmacyScreenWithCustomDrag extends StatefulWidget {
   final List<Map<String, String>> pharmacies;
-  const _PharmacyScreenWithCustomDrag({required this.pharmacies});
+  final UserInfo userInfo;
+  const _PharmacyScreenWithCustomDrag({required this.pharmacies, required this.userInfo});
 
   @override
   State<_PharmacyScreenWithCustomDrag> createState() => _PharmacyScreenWithCustomDragState();
@@ -152,7 +156,7 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
         // _isLoadingData는 약국 정보 로딩까지 true 유지
         _errorMessage = null;
       });
-      print("Current position: ${_currentPosition}");
+      // print("Current position: ${_currentPosition}");
       // _moveCameraToCurrentPosition(); // -> _updateMapElements로 대체되어 _fetchPharmacies 성공 후 호출
       if (_currentPosition != null) {
         await _fetchPharmacies(_currentPosition!.latitude, _currentPosition!.longitude);
@@ -224,7 +228,8 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
               '_distanceMeters': distanceMeters.toString(), 
               'latitude': pharmacyLatitude, // 약국 위도 추가
               'longitude': pharmacyLongitude, // 약국 경도 추가
-              'id': doc['id'] ?? 'no-id-${DateTime.now().millisecondsSinceEpoch}' // 마커 ID용, 없으면 임시 생성
+              'id': doc['id'] ?? 'no-id-${DateTime.now().millisecondsSinceEpoch}', // 마커 ID용, 없으면 임시 생성
+              'phone': doc['phone'] ?? '', // 전화번호 추가
             };
           }).toList();
 
@@ -328,7 +333,7 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
     }
   }
 
-  void _showCallDialog(BuildContext context, String pharmacyName) {
+  void _showCallDialog(BuildContext context, String pharmacyName, String phoneNumber, {Map<String, dynamic>? pharmacy}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -355,8 +360,11 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
                       '전화상담요청',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
                     ),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
+                      if (pharmacy != null) {
+                        await _requestConsultation(context, pharmacy, history: "전화상담요청");
+                      }
                     },
                   ),
                 ),
@@ -371,7 +379,7 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
                     minLeadingWidth: 48,
                     leading: Icon(Icons.phone, size: 28, color: Colors.black87),
                     title: Text(
-                      '02-123-4567',
+                      phoneNumber.isNotEmpty ? phoneNumber : '전화번호 없음',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19),
                     ),
                     subtitle: Text(
@@ -380,6 +388,7 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
                     ),
                     onTap: () {
                       Navigator.pop(context);
+                      // 실제 전화걸기 기능은 필요시 추가
                     },
                   ),
                 ),
@@ -389,6 +398,44 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
         );
       },
     );
+  }
+
+  Future<void> _requestConsultation(BuildContext context, Map<String, dynamic> pharmacy, {required String history}) async {
+    final url = 'http://192.168.45.208:5555/api/consultation/insert'; // 서버 주소에 맞게 수정
+    final now = DateTime.now().toIso8601String();
+    final body = {
+      "user_id": widget.userInfo.id,
+      "pharmacy_id": 0, // 서버에서 자동 할당
+      "pharmacy_name": pharmacy['name'],
+      "pharmacy_address": pharmacy['address'],
+      "pharmacy_phone": pharmacy['phone'],
+      "created_at": now,
+      "updated_at": now,
+      "status": "progress",
+      "history": history
+    };
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('상담 신청이 완료되었습니다.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('상담 신청 실패: \n${response.body}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('상담 신청 중 오류 발생: $e')),
+      );
+    }
   }
 
   @override
@@ -526,73 +573,92 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
                               final p = _fetchedPharmacies[idx]; // _fetchedPharmacies 사용
                               return Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            p['name']!,
-                                            style: TextStyle(
-                                              color: Colors.blue[800],
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 26,
-                                            ),
-                                          ),
-                                          SizedBox(height: 8),
-                                          Text(
-                                            '${p['distance']!}   ${p['address']!}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 20,
-                                            ),
-                                          ),
-                                          SizedBox(height: 8),
-                                          Text.rich(
-                                            TextSpan(
-                                              children: [
-                                                TextSpan(
-                                                  text: '영업 중 ',
-                                                  style: TextStyle(fontSize: 20),
-                                                ),
-                                                TextSpan(
-                                                  text: p['open']!,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 22,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PharmacyDetailScreen(pharmacy: p, userInfo: widget.userInfo),
                                       ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.only(right: 8.0, bottom: 4.0),
-                                      child: IconButton(
-                                        icon: Container(
-                                          width: 60,
-                                          height: 60,
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Color(0xFFFFD954), width: 3),
-                                          ),
-                                          child: Center(
-                                            child: Icon(Icons.phone, color: Color(0xFFFFD954), size: 40),
-                                          ),
+                                    );
+                                  },
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              p['name']!,
+                                              style: TextStyle(
+                                                color: Colors.blue[800],
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 26,
+                                              ),
+                                            ),
+                                            SizedBox(height: 6),
+                                            Text(
+                                              '${p['distance']!}m',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            Text(
+                                              // '${p['distance']!} ${p['address']!}',
+                                              '${p['address']!}',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                            // SizedBox(height: 8),
+                                            // Text.rich(
+                                            //   TextSpan(
+                                            //     children: [
+                                            //       TextSpan(
+                                            //         text: '영업 중 ',
+                                            //         style: TextStyle(fontSize: 20),
+                                            //       ),
+                                            //       TextSpan(
+                                            //         text: p['open']!,
+                                            //         style: TextStyle(
+                                            //           fontWeight: FontWeight.bold,
+                                            //           fontSize: 22,
+                                            //         ),
+                                            //       ),
+                                            //     ],
+                                            //   ),
+                                            // ),
+                                          ],
                                         ),
-                                        iconSize: 60,
-                                        padding: EdgeInsets.zero,
-                                        constraints: BoxConstraints(minWidth: 60, minHeight: 60),
-                                        onPressed: () => _showCallDialog(context, p['name']!),
                                       ),
-                                    ),
-                                  ],
+                                      Padding(
+                                        padding: EdgeInsets.only(right: 8.0, bottom: 4.0),
+                                        child: IconButton(
+                                          icon: Container(
+                                            width: 60,
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.transparent,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Color(0xFFFFD954), width: 3),
+                                            ),
+                                            child: Center(
+                                              child: Icon(Icons.phone, color: Color(0xFFFFD954), size: 40),
+                                            ),
+                                          ),
+                                          iconSize: 60,
+                                          padding: EdgeInsets.zero,
+                                          constraints: BoxConstraints(minWidth: 60, minHeight: 60),
+                                          onPressed: () => _showCallDialog(context, p['name']!, p['phone'] ?? '', pharmacy: p),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
@@ -604,6 +670,235 @@ class _PharmacyScreenWithCustomDragState extends State<_PharmacyScreenWithCustom
           ),
         ),
       ],
+    );
+  }
+}
+
+class PharmacyDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> pharmacy;
+  final UserInfo userInfo;
+  const PharmacyDetailScreen({required this.pharmacy, required this.userInfo, Key? key}) : super(key: key);
+
+  Future<void> _requestConsultation(BuildContext context, Map<String, dynamic> pharmacy, {required int userId, required String history}) async {
+    final url = 'http://192.168.45.208:5555/api/consultation/insert';
+    final now = DateTime.now().toIso8601String();
+    final body = {
+      "user_id": userId,
+      "pharmacy_id": 0,
+      "pharmacy_name": pharmacy['name'],
+      "pharmacy_address": pharmacy['address'],
+      "pharmacy_phone": pharmacy['phone'],
+      "created_at": now,
+      "updated_at": now,
+      "status": "progress",
+      "history": history
+    };
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+      if (!context.mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('상담 신청이 완료되었습니다.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('상담 신청 실패: \n${response.body}')),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('상담 신청 중 오류 발생: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 항상 임시 이미지 사용
+    final String imageAsset = 'https://via.placeholder.com/400x200.png?text=Pharmacy';
+    final double imageHeight = MediaQuery.of(context).size.height * 0.5;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 36),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          pharmacy['name'] ?? '약국 상세',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 상단 이미지 박스
+          Container(
+            height: imageHeight,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              image: DecorationImage(
+                image: NetworkImage(imageAsset),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          // 약국 정보
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      (pharmacy['distance'] ?? '') + ' ',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: Colors.black),
+                    ),
+                    Expanded(
+                      child: Text(
+                        pharmacy['address'] ?? '',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                if ((pharmacy['phone'] ?? '').isNotEmpty)
+                  Row(
+                    children: [
+                      Icon(Icons.phone, size: 22, color: Colors.black54),
+                      SizedBox(width: 8),
+                      Text(
+                        pharmacy['phone'],
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          // 버튼 2개
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.22,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFFF3D1),
+                        foregroundColor: Colors.black,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 0),
+                      ),
+                      onPressed: () {
+                        // 전화걸기 기능 연결 예정
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.phone, size: 54, color: Colors.black),
+                          SizedBox(height: 14),
+                          Text('전화걸기', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFFF3D1),
+                        foregroundColor: Colors.black,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 0),
+                      ),
+                      onPressed: () async {
+                        // 모달 먼저 띄우고, 확인 시 상담 신청
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              title: Text(
+                                '정기구독 신청',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              content: Text(
+                                '${pharmacy['name']}에서 정기구독을 신청하시겠습니까?',
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                                textAlign: TextAlign.center,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: Text(
+                                    '취소',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text(
+                                    '신청하기',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFB300),
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        if (confirmed == true) {
+                          await _requestConsultation(context, pharmacy, userId: userInfo.id, history: "정기구독 신청");
+                        }
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.medical_services, size: 54, color: Colors.black),
+                          SizedBox(height: 14),
+                          Text('정기구독', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 } 

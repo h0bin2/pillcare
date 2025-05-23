@@ -1,12 +1,12 @@
 # flutter-back/db/models.py
 import sqlalchemy
-from .database import metadata # database.py 에서 정의한 metadata 가져오기
+from db.metadata import metadata # metadata를 별도 파일에서 import
 
 # 사용자 테이블 정의
 users = sqlalchemy.Table(
     "users",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True), # 자동 증가 ID (선택적)
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True), # 자동 증가 ID (선택적)
     sqlalchemy.Column("kakao_id", sqlalchemy.String(length=255), unique=True, index=True, nullable=False), # 카카오 고유 ID
     sqlalchemy.Column("nickname", sqlalchemy.String(length=255), nullable=True), # 카카오 닉네임
     sqlalchemy.Column("profile_image_url", sqlalchemy.String(length=2048), nullable=True), # 프로필 이미지 URL (길이 조절 필요)
@@ -19,7 +19,7 @@ users = sqlalchemy.Table(
 consultations = sqlalchemy.Table(
     "consultations",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True),
     sqlalchemy.Column("user_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("pharmacy_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("created_at", sqlalchemy.DateTime, server_default=sqlalchemy.func.now()),
@@ -43,18 +43,16 @@ consultations = sqlalchemy.Table(
 pharmacies = sqlalchemy.Table(
     "pharmacies",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=255), nullable=False),
     sqlalchemy.Column("address", sqlalchemy.String(length=2048), nullable=False),
-    sqlalchemy.Column("phone", sqlalchemy.String(length=255), nullable=False),
-    sqlalchemy.Column("open_hours", sqlalchemy.DateTime(timezone=True), nullable=False),
-    sqlalchemy.Column("close_hours", sqlalchemy.DateTime(timezone=True), nullable=False),
+    sqlalchemy.Column("phone", sqlalchemy.String(length=255), nullable=True),
 )
 
 records = sqlalchemy.Table(
     "records",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True),
     sqlalchemy.Column("user_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("created_at", sqlalchemy.DateTime, server_default=sqlalchemy.func.now()),
     sqlalchemy.Column("original_image_path", sqlalchemy.String(length=2048), nullable=False),
@@ -68,7 +66,7 @@ records = sqlalchemy.Table(
 record_details = sqlalchemy.Table(
     "record_details",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True),
     sqlalchemy.Column("record_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("pill_id", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("pill_count", sqlalchemy.Integer, nullable=False),
@@ -92,7 +90,7 @@ record_details = sqlalchemy.Table(
 pills = sqlalchemy.Table(
     "pills",
     metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True, autoincrement=True),
     sqlalchemy.Column("drug_code", sqlalchemy.String(length=255), nullable=False),
     sqlalchemy.Column("drug_name", sqlalchemy.String(length=255), nullable=False),
     sqlalchemy.Column("dosage", sqlalchemy.String(length=255), nullable=False),

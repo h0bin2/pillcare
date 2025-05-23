@@ -146,4 +146,35 @@ class RecordService {
       return null;
     }
   }
+
+  static Future<bool> deletePill({required int recordId, required int pillId}) async {
+    final String endpoint = '/api/record/pill_delete';
+    try {
+      final response = await _dio.delete(
+        endpoint,
+        queryParameters: {'record_id': recordId, 'pill_id': pillId},
+      );
+      if (kDebugMode) {
+        print('Delete pill response status: \\${response.statusCode}');
+        print('Delete pill response data: \\${response.data}');
+      }
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('[RecordService] Delete pill request returned status \\${response.statusCode}');
+        return false;
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        print('Error deleting pill (DioException): \\${e.message}');
+        if (e.response != null) {
+          print('DioException response for delete pill: \\${e.response?.data}');
+        }
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error deleting pill (General Exception): \\${e}');
+      return false;
+    }
+  }
 } 

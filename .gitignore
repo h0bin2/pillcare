@@ -1,28 +1,18 @@
-/flutter
-.idea
-.vscode
-.DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-__pycache__/
+# Flutter/Dart 관련
 build/
-flutter_start/build/
-flutter_start/build/ios/
-flutter_start/build/ios/Runner.xcworkspace
-flutter_start/.dart_tool/
-flutter_start/*.iml
-flutter_start/.metadata
-flutter_start/.flutter-plugins
-flutter_start/.flutter-plugins-dependencies
-computer-vision/
-*.pt
-flutter-back/original_images/
+.dart_tool/
+.packages
+.pub/
+
+# IDE 관련
+.idea/
+.vscode/
+*.iml
+
+# OS/기타
+.DS_Store
 *.apk
 *.ipa
-*.dill
-/bfg-*.jar
-/flutter_start_clean.bfg-report/
-/flutter_start_clean/
-pillcare.git/
+
+# 기타
+*.log 
